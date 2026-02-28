@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#050508;--surface:#0a0a10;--text:#f5f7ff;--muted:#a7adbe;
+--accent:#2E86FF;--accent2:#0AF;--card:rgba(255,255,255,.04);
+--border:rgba(255,255,255,.06);--ok:#3ed598;--warn:#ffb648;--danger:#ff5d73;
+--r:14px;--font:'Inter',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+
+/* ── HEADER ── */
+.header{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:1rem;padding:.8rem 2rem;
+background:linear-gradient(180deg,rgba(10,10,16,.97),rgba(8,8,14,.92));backdrop-filter:blur(12px);
+border-bottom:1px solid var(--border)}
+.logo{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;cursor:default;letter-spacing:-.5px}
+
+/* tabs */
+.tabs{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:.5rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;color:var(--muted);
+cursor:pointer;white-space:nowrap;transition:all .2s;border:1px solid transparent;user-select:none;
+display:flex;align-items:center;gap:.4rem}
+.tab:hover{color:var(--text);background:rgba(46,134,255,.12)}
+.tab.active{color:#fff;background:rgba(46,134,255,.28);border-color:rgba(46,134,255,.3)}
+.tab-icon{font-size:.9rem;opacity:.7;line-height:1}
+.tab.active .tab-icon{opacity:1}
+
+/* status dot */
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.6s infinite;margin-left:auto;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── MAIN ── */
+.main{max-width:1600px;margin:0 auto;padding:2rem 2rem 4rem}
+.pane{display:none;animation:up .4s ease}
+.pane.active{display:block}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* cards */
+.card{background:linear-gradient(180deg,rgba(10,10,16,.96),rgba(8,8,14,.93));
+border:1px solid var(--border);border-radius:var(--r);padding:1.2rem;transition:border-color .2s}
+.card:hover{border-color:rgba(46,134,255,.2)}
+.card h3{font-size:.85rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.8rem}
+.card .big{font-size:2rem;font-weight:800}
+
+/* grids */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:1rem}
+
+/* section titles */
+.section-title{font-size:1.1rem;font-weight:700;margin:2rem 0 1rem;display:flex;align-items:center;gap:.5rem}
+.section-title::before{content:'';width:3px;height:18px;background:var(--accent);border-radius:2px}
+
+/* badges */
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase}
+.badge-ok{background:rgba(62,213,152,.15);color:var(--ok)}
+.badge-warn{background:rgba(255,182,72,.15);color:var(--warn)}
+.badge-danger{background:rgba(255,93,115,.15);color:var(--danger)}
+.badge-accent{background:rgba(46,134,255,.15);color:var(--accent)}
+
+/* progress bar */
+.progress-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:.5rem}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s ease;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+
+/* gauge */
+.gauge-wrap{display:flex;justify-content:center;padding:1rem 0}
+.gauge{width:200px;height:200px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+.gauge-inner{width:150px;height:150px;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;
+align-items:center;justify-content:center;z-index:1}
+.gauge-pct{font-size:2.2rem;font-weight:800}
+.gauge-label{font-size:.75rem;color:var(--muted)}
+
+/* checklist */
+.check-item{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.9rem}
+.check-item:last-child{border-bottom:none}
+.check-item input[type="checkbox"]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.check-item.done span{text-decoration:line-through;color:var(--muted)}
+
+/* activity feed */
+.feed-item{padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.85rem;display:flex;gap:.5rem}
+.feed-item:last-child{border-bottom:none}
+.feed-time{color:var(--accent);font-weight:600;white-space:nowrap;font-size:.75rem;min-width:52px}
+
+/* client table */
+.tbl{width:100%;border-collapse:collapse;font-size:.85rem}
+.tbl th{text-align:left;color:var(--muted);font-weight:600;padding:.5rem;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase}
+.tbl td{padding:.5rem;border-bottom:1px solid var(--border)}
+
+/* input styles */
+.inp{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;
+color:var(--text);font-family:var(--font);font-size:.85rem;outline:none;width:100%;transition:border-color .2s}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:rgba(255,255,255,.25)}
+select.inp{cursor:pointer}
+
+.btn{padding:.5rem 1.2rem;border-radius:8px;border:none;font-family:var(--font);font-weight:600;
+font-size:.8rem;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#6a4ae0}
+.btn-sm{padding:.35rem .8rem;font-size:.75rem}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--text)}
+.btn-danger{background:rgba(255,93,115,.15);color:var(--danger)}
+.btn-danger:hover{background:rgba(255,93,115,.3)}
+
+/* revenue chart */
+.chart-container{position:relative;height:240px;margin-top:1rem}
+.chart-container canvas{width:100%!important;height:100%!important}
+
+/* daily ops domain card */
+.domain-card{margin-bottom:.5rem}
+.domain-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.domain-header h4{font-size:.9rem;font-weight:700}
+.domain-count{font-size:.75rem;color:var(--muted)}
+.add-row{display:flex;gap:.5rem;margin-top:.6rem}
+.add-row .inp{flex:1}
+
+/* timeline */
+.timeline-line{position:relative;padding-left:2rem}
+.timeline-line::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:1.5rem}
+.tl-dot{position:absolute;left:-2rem;top:4px;width:18px;height:18px;border-radius:50%;
+background:var(--surface);border:2px solid var(--border);z-index:1}
+.tl-item.current .tl-dot{border-color:var(--accent);box-shadow:0 0 12px rgba(46,134,255,.4)}
+.tl-item h4{font-size:.95rem;font-weight:700;margin-bottom:.2rem}
+.tl-date{font-size:.75rem;color:var(--muted);margin-bottom:.3rem}
+.tl-desc{font-size:.85rem;color:var(--muted);line-height:1.5}
+
+/* notes */
+.notes-area{width:100%;min-height:400px;background:rgba(255,255,255,.03);border:1px solid var(--border);
+border-radius:var(--r);padding:1rem;color:var(--text);font-family:var(--font);font-size:.9rem;
+line-height:1.6;resize:vertical;outline:none}
+.notes-area:focus{border-color:var(--accent)}
+
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;
+align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;
+width:90%;max-width:450px;animation:up .3s ease}
+.modal h3{margin-bottom:1rem;font-size:1.1rem}
+.modal .field{margin-bottom:.8rem}
+.modal .field label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.3rem;font-weight:600;text-transform:uppercase}
+.modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}
+
+/* file cards */
+.file-card{display:flex;align-items:center;gap:1rem;padding:1rem;background:linear-gradient(180deg,rgba(10,10,16,.96),rgba(8,8,14,.93));
+border:1px solid var(--border);border-radius:var(--r);transition:all .2s;cursor:pointer;text-decoration:none;color:var(--text)}
+.file-card:hover{border-color:rgba(46,134,255,.3);transform:translateY(-1px)}
+.file-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+font-size:1.1rem;font-weight:800;flex-shrink:0}
+.file-icon.html{background:rgba(255,93,115,.15);color:var(--danger)}
+.file-icon.xlsx{background:rgba(62,213,152,.15);color:var(--ok)}
+.file-icon.txt{background:rgba(255,182,72,.15);color:var(--warn)}
+.file-icon.css{background:rgba(46,134,255,.15);color:var(--accent)}
+.file-icon.doc{background:rgba(74,139,255,.15);color:var(--accent2)}
+.file-icon.link{background:rgba(46,134,255,.15);color:var(--accent)}
+.file-info{flex:1;min-width:0}
+.file-info h4{font-size:.9rem;font-weight:700;margin-bottom:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-info p{font-size:.75rem;color:var(--muted);line-height:1.4}
+.file-badge{font-size:.65rem;padding:2px 8px;border-radius:12px;font-weight:700;text-transform:uppercase;flex-shrink:0}
+.file-section{margin-bottom:2rem}
+.file-section h3{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:.8rem;
+padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.file-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
+
+/* responsive */
+@media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr}.grid-1-2{grid-template-columns:1fr}}
+@media(max-width:768px){
+.header{flex-wrap:wrap;padding:.6rem 1rem}.tabs{order:3;width:100%}
+.main{padding:1rem}.grid-4,.grid-2,.file-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ HEADER ══════ -->
+<div class="header">
+<div class="logo">Mission Control</div>
+<div class="tabs" id="tabs"></div>
+<div class="status-dot" title="Active"></div>
+</div>
+
+<!-- ══════ MAIN ══════ -->
+<div class="main" id="main"></div>
+
+<!-- ══════ MODAL ══════ -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+<div class="modal" id="modalBox"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA LAYER — localStorage persistence
+// ═══════════════════════════════════════════
+const LS_KEY = 'ab_mc_';
+const DATA_VERSION = 'mar2026v2';
+// Clear old data if version mismatch (fresh month deploy)
+if (localStorage.getItem(LS_KEY + 'version') !== DATA_VERSION) {
+  Object.keys(localStorage).filter(k => k.startsWith(LS_KEY)).forEach(k => localStorage.removeItem(k));
+  localStorage.setItem(LS_KEY + 'version', DATA_VERSION);
+}
+function load(k, def) { try { const v = localStorage.getItem(LS_KEY + k); return v ? JSON.parse(v) : def; } catch { return def; } }
+function save(k, v) { localStorage.setItem(LS_KEY + k, JSON.stringify(v)); }
+
+// ── STATE ──
+const S = {
+  rev: load('rev', 0),
+  monthlyGoal: load('monthlyGoal', 2000),
+  bigGoal: load('bigGoal', 30000),
+  bigGoalDate: load('bigGoalDate', '2026-07-01'),
+  priorities: load('priorities', [
+    { text: 'Record daily numerology video', done: false },
+    { text: 'Create UGC video', done: false },
+    { text: 'Send 20 brand outreach emails (Bento)', done: false },
+    { text: 'Send brand requests (Backstage)', done: false },
+    { text: 'Reply to comments on energy video', done: false },
+    { text: 'Follow up warm leads from Feb launch', done: false },
+    { text: 'Post "Comment your birthday" CTA', done: false },
+  ]),
+  activity: load('activity', [
+    { time: '2026-03-01 00:00', text: 'March begins — $2K target this month. Let\'s go.' },
+  ]),
+  clients: load('clients', [
+    { name: 'Dermawell', value: 175, status: 'active', type: 'UGC', date: '2026-02-25' },
+    { name: 'Freebird', value: 175, status: 'pending', type: 'UGC', date: '2026-02-25' },
+  ]),
+  readings: load('readings', [
+    { name: 'Personal Blueprint', price: 97, sold: 0 },
+    { name: 'Compatibility', price: 159, sold: 0 },
+    { name: 'Deep Dive Audio', price: 297, sold: 0 },
+    { name: 'Ancestral Pattern', price: 397, sold: 0 },
+    { name: 'Strategic Timing', price: 497, sold: 0 },
+    { name: 'Annual Forecast', price: 997, sold: 0 },
+  ]),
+  revMonths: load('revMonths', [
+    { month: 'Oct', amount: 0 },
+    { month: 'Nov', amount: 0 },
+    { month: 'Dec', amount: 0 },
+    { month: 'Jan', amount: 100 },
+    { month: 'Feb', amount: 920 },
+    { month: 'Mar', amount: 0 },
+  ]),
+  dailyOps: load('dailyOps', {
+    'Spiritual Tech': [
+      { text: 'Record daily numerology video', done: false },
+      { text: 'Post to TikTok, IG, YT, FB', done: false },
+      { text: 'Reply to video comments', done: false },
+      { text: 'Follow up warm reading leads', done: false },
+    ],
+    'UGC Creator': [
+      { text: 'Create UGC video for brand', done: false },
+      { text: 'Send 20 outreach emails (Bento)', done: false },
+      { text: 'Send brand requests (Backstage)', done: false },
+      { text: 'Check Lemlist sequence status', done: false },
+    ],
+    'Presidio': [
+      { text: 'Check Slack / email', done: false },
+      { text: 'Client follow-ups', done: false },
+    ],
+    "Gentleman's Vault": [
+      { text: 'Plan community structure', done: false },
+      { text: 'Draft founding member offer', done: false },
+    ],
+  }),
+  projects: load('projects', [
+    { title: 'Gentleman\'s Vault Launch', desc: 'Structure, pricing, content, delivery framework', priority: 'high', col: 'backlog', created: '2026-02-25' },
+    { title: 'Website Sales Pages', desc: '5 Blueprint Code reading pages — DONE', priority: 'medium', col: 'done', created: '2026-02-25' },
+    { title: 'Apollo Lead Gen Setup', desc: 'Configure Apollo for UGC brand prospecting', priority: 'high', col: 'progress', created: '2026-02-25' },
+    { title: 'Lemlist Sequences', desc: 'LinkedIn outreach sequences for UGC brands', priority: 'medium', col: 'progress', created: '2026-02-25' },
+    { title: 'GHL Automations', desc: 'Reading purchase → delivery workflow', priority: 'high', col: 'backlog', created: '2026-02-25' },
+    { title: 'CapGemini Follow-up', desc: 'Final interview done 2/24 — awaiting response', priority: 'medium', col: 'progress', created: '2026-02-24' },
+  ]),
+  timeline: load('timeline', [
+    { title: 'Phase 1 — Foundation', range: 'Feb 25 – Mar 10', desc: 'Daily content + 20 outreach/day + optimize funnel + close first 10 readings', milestones: ['Daily video habit locked in','20 outreach emails/day','5+ readings sold','First UGC deals closed'], current: true },
+    { title: 'Phase 2 — Momentum', range: 'Mar 11 – Apr 15', desc: 'Scale outreach to 50/day, launch birthday CTA funnel, hit $2K/mo', milestones: ['$2K/month revenue','10+ reading clients','5+ UGC brand deals','Birthday CTA converting'] },
+    { title: 'Phase 3 — Gentleman\'s Vault', range: 'Apr 16 – May 31', desc: 'Launch founding member cohort, set pricing, run first live sessions', milestones: ['Vault doors open','Founding members enrolled','First live group call','Recurring revenue started'] },
+    { title: 'Phase 4 — Scale', range: 'Jun 1 – Jul 31', desc: 'Hit $30K/month between readings + UGC + Vault memberships', milestones: ['$30K/month revenue','Presidio exit plan finalized','Vault growing organically','Multiple revenue streams flowing'] },
+  ]),
+  notes: load('notes', 'Mission Control Notes\n─────────────────\n\n• Blueprint Code™ framework is LIVE — all reading pages published\n• GG33 source PDFs can be deleted — all knowledge extracted\n• When client orders reading: provide name + DOB → Claude generates full framework\n• Mobile menu fix: WPCode Header injection (Astra theme override)\n• CapGemini final interview done 2/24 — waiting to hear back\n'),
+  outreach: load('outreach', { sent: 0, replied: 0, booked: 0 }),
+  social: load('social', { tiktok: 500, instagram: 300, youtube: 150, facebook: 50 }),
+  ytd: load('ytd', { prevRev: 920, readingsSold: 5, readingsRev: 545, ugcRev: 375, outreachSent: 115, outreachReplied: 0 }),
+};
+
+// persist helpers
+function saveAll() {
+  save('rev', S.rev); save('monthlyGoal', S.monthlyGoal); save('bigGoal', S.bigGoal);
+  save('bigGoalDate', S.bigGoalDate); save('priorities', S.priorities); save('activity', S.activity);
+  save('clients', S.clients); save('readings', S.readings); save('revMonths', S.revMonths);
+  save('dailyOps', S.dailyOps); save('projects', S.projects); save('timeline', S.timeline);
+  save('notes', S.notes); save('outreach', S.outreach); save('social', S.social); save('ytd', S.ytd);
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+const TABS = [
+  { name: 'Dashboard', icon: '⊞' },
+  { name: 'Revenue', icon: '◎' },
+  { name: 'Readings', icon: '✦' },
+  { name: 'Outreach', icon: '↗' },
+  { name: 'Daily Ops', icon: '☰' },
+  { name: 'Projects', icon: '▦' },
+  { name: 'Timeline', icon: '◈' },
+  { name: 'Files', icon: '◉' },
+  { name: 'Notes', icon: '✎' },
+];
+let activeTab = 'Dashboard';
+
+function renderTabs() {
+  const el = document.getElementById('tabs');
+  el.innerHTML = TABS.map(t =>
+    `<div class="tab ${t.name===activeTab?'active':''}" onclick="switchTab('${t.name}')"><span class="tab-icon">${t.icon}</span>${t.name}</div>`
+  ).join('');
+}
+
+function switchTab(t) {
+  activeTab = t;
+  renderTabs();
+  renderPane();
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+const $ = s => document.querySelector(s);
+const money = n => '$' + Number(n).toLocaleString();
+const pct = (a,b) => b ? Math.min(Math.round((a/b)*100),100) : 0;
+const now = () => { const d = new Date(); return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); };
+const today = () => new Date().toISOString().slice(0,10);
+
+function addActivity(text) {
+  S.activity.unshift({ time: today() + ' ' + now(), text });
+  if (S.activity.length > 100) S.activity.length = 100;
+  saveAll();
+}
+
+function daysUntil(dateStr) {
+  const diff = new Date(dateStr) - new Date();
+  return Math.max(0, Math.ceil(diff / 86400000));
+}
+
+function totalReadingsRev() {
+  return S.readings.reduce((s,r) => s + (r.price * r.sold), 0);
+}
+
+function totalClientsRev() {
+  return S.clients.reduce((s,c) => s + c.value, 0);
+}
+
+// ═══════════════════════════════════════════
+// RENDER ENGINE
+// ═══════════════════════════════════════════
+function renderPane() {
+  const m = document.getElementById('main');
+  switch(activeTab) {
+    case 'Dashboard': m.innerHTML = renderDashboard(); break;
+    case 'Revenue': m.innerHTML = renderRevenue(); afterRevenue(); break;
+    case 'Readings': m.innerHTML = renderReadings(); break;
+    case 'Outreach': m.innerHTML = renderOutreach(); break;
+    case 'Daily Ops': m.innerHTML = renderDailyOps(); break;
+    case 'Projects': m.innerHTML = renderProjects(); break;
+    case 'Timeline': m.innerHTML = renderTimeline(); break;
+    case 'Files': m.innerHTML = renderFiles(); break;
+    case 'Notes': m.innerHTML = renderNotes(); break;
+  }
+  // reactivate pane
+  document.querySelectorAll('.pane').forEach(p => p.classList.add('active'));
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const totalRev = S.rev;
+  const goalPct = pct(totalRev, S.monthlyGoal);
+  const activePrj = S.projects.filter(p => p.col !== 'done').length;
+  const todayTasks = Object.values(S.dailyOps).flat();
+  const doneTasks = todayTasks.filter(t => t.done).length;
+  const daysLeft = daysUntil(S.bigGoalDate);
+
+  return `<div class="pane">
+    <div class="grid-4" style="margin-bottom:1.5rem">
+      <div class="card" ondblclick="editRevenue()">
+        <h3>Revenue This Month</h3>
+        <div class="big" style="color:var(--ok)">${money(totalRev)}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${goalPct}%"></div></div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">${goalPct}% of ${money(S.monthlyGoal)} goal</div>
+      </div>
+      <div class="card">
+        <h3>Active Projects</h3>
+        <div class="big">${activePrj}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">${S.projects.filter(p=>p.col==='progress').length} in progress</div>
+      </div>
+      <div class="card">
+        <h3>Today's Tasks</h3>
+        <div class="big">${doneTasks}/${todayTasks.length}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct(doneTasks,todayTasks.length)}%"></div></div>
+      </div>
+      <div class="card">
+        <h3>Days to $30K Goal</h3>
+        <div class="big" style="color:var(--warn)">${daysLeft}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">Target: July 2026</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="section-title">Today's Priorities</div>
+        <div class="card">
+          ${S.priorities.map((p,i) => `
+            <div class="check-item ${p.done?'done':''}">
+              <input type="checkbox" ${p.done?'checked':''} onchange="togglePriority(${i})">
+              <span>${p.text}</span>
+            </div>
+          `).join('')}
+          <div class="add-row" style="margin-top:.8rem">
+            <input class="inp" id="newPri" placeholder="Add priority..." onkeydown="if(event.key==='Enter')addPriority()">
+            <button class="btn btn-primary btn-sm" onclick="addPriority()">+</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title">Activity Feed</div>
+        <div class="card" style="max-height:350px;overflow-y:auto">
+          ${S.activity.slice(0,15).map(a => `
+            <div class="feed-item">
+              <div class="feed-time">${a.time.split(' ')[1] || a.time}</div>
+              <div>${a.text}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:2rem">Year to Date — 2026</div>
+    <div class="grid-4">
+      <div class="card">
+        <h3>YTD Readings Sold</h3>
+        <div class="big">${S.readings.reduce((s,r)=>s+r.sold,0) + (S.ytd?.readingsSold || 0)}</div>
+        <div style="font-size:.75rem;color:var(--ok)">${money(totalReadingsRev() + (S.ytd?.readingsRev || 0))} revenue</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">This month: ${S.readings.reduce((s,r)=>s+r.sold,0)} sold / ${money(totalReadingsRev())}</div>
+      </div>
+      <div class="card">
+        <h3>YTD Total Revenue</h3>
+        <div class="big" style="color:var(--ok)">${money(S.rev + (S.ytd?.prevRev || 0))}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${money(S.ytd?.prevRev || 0)} prior months + ${money(S.rev)} this month</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">UGC: ${money(totalClientsRev())} | Readings: ${money(totalReadingsRev())}</div>
+      </div>
+      <div class="card">
+        <h3>YTD Outreach Sent</h3>
+        <div class="big">${S.outreach.sent + (S.ytd?.outreachSent || 0)}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${S.outreach.replied + (S.ytd?.outreachReplied || 0)} total replies</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">This month: ${S.outreach.sent} sent / ${S.outreach.replied} replies</div>
+      </div>
+      <div class="card" ondblclick="editFollowers()">
+        <h3>Followers by Platform</h3>
+        <div class="big">${(S.social.tiktok+S.social.instagram+S.social.youtube+S.social.facebook).toLocaleString()}</div>
+        <div style="font-size:.75rem;margin-top:.3rem;line-height:1.8">
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">TikTok</span><span style="font-weight:700">${S.social.tiktok.toLocaleString()}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Instagram</span><span style="font-weight:700">${S.social.instagram.toLocaleString()}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">YouTube</span><span style="font-weight:700">${S.social.youtube.toLocaleString()}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Facebook</span><span style="font-weight:700">${S.social.facebook.toLocaleString()}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="resetMonth()" style="opacity:.5">↻ Reset for New Month</button>
+    </div>
+  </div>`;
+}
+
+// ── REVENUE ──
+function renderRevenue() {
+  const goalPct = pct(S.rev, S.monthlyGoal);
+  const readingsRev = totalReadingsRev();
+  const ugcRev = totalClientsRev();
+
+  return `<div class="pane">
+    <div class="grid-3">
+      <div class="card" style="text-align:center">
+        <h3>Monthly Revenue</h3>
+        <div class="gauge-wrap">
+          <div class="gauge" style="background:conic-gradient(var(--accent) 0deg,var(--accent) ${goalPct*3.6}deg,rgba(255,255,255,.06) ${goalPct*3.6}deg)">
+            <div class="gauge-inner">
+              <div class="gauge-pct">${goalPct}%</div>
+              <div class="gauge-label">${money(S.rev)} / ${money(S.monthlyGoal)}</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="editMonthlyGoal()">Edit Goal</button>
+      </div>
+      <div class="card">
+        <h3>Revenue Breakdown</h3>
+        <div style="margin-bottom:1rem">
+          <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.3rem">
+            <span>Numerology Readings</span><span style="color:var(--ok)">${money(readingsRev)}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct(readingsRev,S.rev)}%;background:var(--ok)"></div></div>
+        </div>
+        <div style="margin-bottom:1rem">
+          <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.3rem">
+            <span>UGC Brand Deals</span><span style="color:var(--accent)">${money(ugcRev)}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct(ugcRev,S.rev)}%;background:var(--accent)"></div></div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:.8rem;margin-top:.5rem;display:flex;justify-content:space-between;font-weight:700">
+          <span>Total</span><span>${money(S.rev)}</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Projections</h3>
+        <div style="font-size:.85rem;line-height:2">
+          <div style="display:flex;justify-content:space-between"><span>Current MRR</span><span style="font-weight:700">${money(S.rev)}</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Annual Run Rate</span><span style="font-weight:700">${money(S.rev*12)}</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Gap to $30K/mo</span><span style="font-weight:700;color:var(--danger)">${money(S.bigGoal - S.rev)}</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Growth Needed</span><span style="font-weight:700;color:var(--warn)">${S.rev>0?Math.round(((S.bigGoal/S.rev)-1)*100):'∞'}x</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Revenue History</div>
+    <div class="card">
+      <div class="chart-container"><canvas id="revChart"></canvas></div>
+    </div>
+
+    <div class="section-title">UGC Client Pipeline</div>
+    <div class="card">
+      <table class="tbl">
+        <tr><th>Brand</th><th>Value</th><th>Status</th><th>Type</th><th>Date</th><th></th></tr>
+        ${S.clients.map((c,i) => `
+          <tr>
+            <td style="font-weight:600">${c.name}</td>
+            <td>${money(c.value)}</td>
+            <td><span class="badge ${c.status==='active'?'badge-ok':c.status==='pending'?'badge-warn':'badge-danger'}">${c.status}</span></td>
+            <td>${c.type||'UGC'}</td>
+            <td style="color:var(--muted)">${c.date}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="editClient(${i})">Edit</button></td>
+          </tr>
+        `).join('')}
+      </table>
+      <div style="margin-top:.8rem">
+        <button class="btn btn-primary btn-sm" onclick="addClient()">+ Add Client</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function afterRevenue() {
+  const canvas = document.getElementById('revChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+  const pad = { t: 20, r: 20, b: 40, l: 60 };
+  const data = S.revMonths;
+  const maxVal = Math.max(...data.map(d => d.amount), S.monthlyGoal) * 1.2 || 1000;
+  const barW = Math.min(50, (w - pad.l - pad.r) / data.length * 0.6);
+  const gap = (w - pad.l - pad.r) / data.length;
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (h - pad.t - pad.b) * (1 - i/4);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#a7adbe'; ctx.font = '11px Inter';
+    ctx.fillText(money(Math.round(maxVal * i/4)), 4, y + 4);
+  }
+
+  // goal line
+  const goalY = pad.t + (h - pad.t - pad.b) * (1 - S.monthlyGoal/maxVal);
+  ctx.strokeStyle = 'rgba(46,134,255,.4)'; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(pad.l, goalY); ctx.lineTo(w - pad.r, goalY); ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle = '#2E86FF'; ctx.font = '10px Inter';
+  ctx.fillText('Goal: ' + money(S.monthlyGoal), w - pad.r - 80, goalY - 6);
+
+  // bars
+  data.forEach((d, i) => {
+    const x = pad.l + gap * i + (gap - barW) / 2;
+    const barH = (d.amount / maxVal) * (h - pad.t - pad.b);
+    const y = h - pad.b - barH;
+    const grad = ctx.createLinearGradient(x, y, x, h - pad.b);
+    grad.addColorStop(0, '#2E86FF'); grad.addColorStop(1, '#4a8bff');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.roundRect(x, y, barW, barH, [4,4,0,0]); ctx.fill();
+    // label
+    ctx.fillStyle = '#a7adbe'; ctx.font = '11px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(d.month, x + barW/2, h - pad.b + 18);
+    if (d.amount > 0) { ctx.fillStyle = '#f5f7ff'; ctx.font = '600 11px Inter'; ctx.fillText(money(d.amount), x + barW/2, y - 6); }
+    ctx.textAlign = 'start';
+  });
+}
+
+// ── READINGS ──
+function renderReadings() {
+  const totalSold = S.readings.reduce((s,r)=>s+r.sold,0);
+  const totalRev = totalReadingsRev();
+  return `<div class="pane">
+    <div class="section-title">Blueprint Code™ Reading Tiers</div>
+    <div class="grid-3">
+      ${S.readings.map((r,i) => `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
+            <h3 style="margin:0">${r.name}</h3>
+            <span class="badge badge-accent">${money(r.price)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div>
+              <div class="big">${r.sold}</div>
+              <div style="font-size:.75rem;color:var(--muted)">sold</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:1.3rem;font-weight:700;color:var(--ok)">${money(r.price * r.sold)}</div>
+              <div style="font-size:.75rem;color:var(--muted)">revenue</div>
+            </div>
+          </div>
+          <div style="margin-top:.8rem;display:flex;gap:.5rem">
+            <button class="btn btn-primary btn-sm" onclick="addSale(${i})">+ Sale</button>
+            <button class="btn btn-ghost btn-sm" onclick="removeSale(${i})">- Sale</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="section-title" style="margin-top:2rem">Readings Summary</div>
+    <div class="grid-3">
+      <div class="card"><h3>Total Readings Sold</h3><div class="big">${totalSold}</div></div>
+      <div class="card"><h3>Reading Revenue</h3><div class="big" style="color:var(--ok)">${money(totalRev)}</div></div>
+      <div class="card"><h3>Avg Order Value</h3><div class="big">${totalSold>0?money(Math.round(totalRev/totalSold)):'$0'}</div></div>
+    </div>
+    <div class="section-title" style="margin-top:2rem">Payment Links</div>
+    <div class="card" style="font-size:.85rem;line-height:2">
+      <div>Personal Blueprint ($97) — <a href="https://api.spiritualtech.com/payment-link/698a9f4ce90aca50568dec80" target="_blank">Payment Link</a> | <a href="https://www.anilgunjal.com/personal-blueprint/" target="_blank">Sales Page</a></div>
+      <div>Deep Dive Audio ($297) — <a href="https://api.spiritualtech.com/payment-link/69a32fee3413b574b1fb5e4d" target="_blank">Payment Link</a> | <a href="https://www.anilgunjal.com/deep-dive-audio/" target="_blank">Sales Page</a></div>
+      <div>Ancestral Pattern ($397) — <a href="https://api.spiritualtech.com/payment-link/69a330363413b535f8fb5e92" target="_blank">Payment Link</a> | <a href="https://www.anilgunjal.com/ancestral-pattern/" target="_blank">Sales Page</a></div>
+      <div>Strategic Timing ($497) — <a href="https://api.spiritualtech.com/payment-link/69a3300e3413b566b6fb5e5b" target="_blank">Payment Link</a> | <a href="https://www.anilgunjal.com/strategic-timing/" target="_blank">Sales Page</a></div>
+      <div>Annual Forecast ($997) — <a href="https://api.spiritualtech.com/payment-link/69a3304f84b2d7253c584842" target="_blank">Payment Link</a> | <a href="https://www.anilgunjal.com/annual-forecast/" target="_blank">Sales Page</a></div>
+      <div>Compatibility ($159) — <a href="https://api.spiritualtech.com/payment-link/698a9f4ce90aca50568dec80" target="_blank">Payment Link</a></div>
+    </div>
+  </div>`;
+}
+
+function addSale(i) { S.readings[i].sold++; S.rev += S.readings[i].price; addActivity(`Reading sold: ${S.readings[i].name} — ${money(S.readings[i].price)}`); renderPane(); }
+function removeSale(i) { if(S.readings[i].sold>0){S.readings[i].sold--;S.rev-=S.readings[i].price;saveAll();renderPane();} }
+
+// ── OUTREACH ──
+function renderOutreach() {
+  return `<div class="pane">
+    <div class="section-title">Outreach Performance</div>
+    <div class="grid-4">
+      <div class="card" ondblclick="editOutreach('sent')"><h3>Emails Sent</h3><div class="big">${S.outreach.sent}</div></div>
+      <div class="card" ondblclick="editOutreach('replied')"><h3>Replies</h3><div class="big" style="color:var(--warn)">${S.outreach.replied}</div></div>
+      <div class="card" ondblclick="editOutreach('booked')"><h3>Calls Booked</h3><div class="big" style="color:var(--ok)">${S.outreach.booked}</div></div>
+      <div class="card">
+        <h3>Reply Rate</h3>
+        <div class="big">${S.outreach.sent>0?((S.outreach.replied/S.outreach.sent)*100).toFixed(1):'0'}%</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:2rem">Social Media Followers</div>
+    <div class="grid-4">
+      ${Object.entries(S.social).map(([platform, count]) => `
+        <div class="card" ondblclick="editSocial('${platform}')">
+          <h3>${platform.charAt(0).toUpperCase()+platform.slice(1)}</h3>
+          <div class="big">${count.toLocaleString()}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="section-title" style="margin-top:2rem">Outreach Tools</div>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Bento</h3>
+        <div style="font-size:.85rem;color:var(--muted)">Email outreach to brands</div>
+        <div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div>
+      </div>
+      <div class="card">
+        <h3>Backstage</h3>
+        <div style="font-size:.85rem;color:var(--muted)">Brand request platform</div>
+        <div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div>
+      </div>
+      <div class="card">
+        <h3>Lemlist</h3>
+        <div style="font-size:.85rem;color:var(--muted)">LinkedIn outreach sequences</div>
+        <div style="margin-top:.5rem"><span class="badge badge-warn">Setting Up</span></div>
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem;font-size:.75rem;color:var(--muted)">Double-click any metric card to update its value.</div>
+  </div>`;
+}
+
+function editOutreach(field) {
+  const val = prompt(`Update ${field}:`, S.outreach[field]);
+  if (val !== null && !isNaN(val)) { S.outreach[field] = parseInt(val); saveAll(); renderPane(); }
+}
+
+function editSocial(platform) {
+  const val = prompt(`Update ${platform} followers:`, S.social[platform]);
+  if (val !== null && !isNaN(val)) { S.social[platform] = parseInt(val); saveAll(); renderPane(); }
+}
+
+// ── DAILY OPS ──
+function renderDailyOps() {
+  const domains = Object.entries(S.dailyOps);
+  return `<div class="pane">
+    <div class="section-title">Daily Operations — ${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>
+    <div class="grid-2">
+      ${domains.map(([name, items]) => {
+        const done = items.filter(t=>t.done).length;
+        const total = items.length;
+        return `<div class="card">
+          <div class="domain-header">
+            <h3 style="margin:0">${name}</h3>
+            <span class="domain-count">${done}/${total} done</span>
+          </div>
+          <div class="progress-bar" style="margin-bottom:.8rem"><div class="progress-fill" style="width:${pct(done,total)}%"></div></div>
+          ${items.map((t,i) => `
+            <div class="check-item ${t.done?'done':''}">
+              <input type="checkbox" ${t.done?'checked':''} onchange="toggleOps('${name}',${i})">
+              <span>${t.text}</span>
+              <button class="btn btn-danger btn-sm" style="margin-left:auto;padding:2px 6px;font-size:.65rem" onclick="removeOps('${name}',${i})">×</button>
+            </div>
+          `).join('')}
+          <div class="add-row">
+            <input class="inp" id="ops_${name.replace(/[^a-z]/gi,'')}" placeholder="Add task..." onkeydown="if(event.key==='Enter')addOps('${name}')">
+            <button class="btn btn-primary btn-sm" onclick="addOps('${name}')">+</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:1rem;text-align:center">
+      <button class="btn btn-ghost" onclick="resetDailyOps()">Reset All Tasks (New Day)</button>
+    </div>
+  </div>`;
+}
+
+function toggleOps(domain, i) {
+  S.dailyOps[domain][i].done = !S.dailyOps[domain][i].done;
+  if (S.dailyOps[domain][i].done) addActivity(`Completed: ${S.dailyOps[domain][i].text}`);
+  saveAll(); renderPane();
+}
+
+function addOps(domain) {
+  const inp = document.getElementById('ops_' + domain.replace(/[^a-z]/gi,''));
+  if (inp && inp.value.trim()) { S.dailyOps[domain].push({ text: inp.value.trim(), done: false }); saveAll(); renderPane(); }
+}
+
+function removeOps(domain, i) { S.dailyOps[domain].splice(i, 1); saveAll(); renderPane(); }
+
+function resetDailyOps() {
+  if (confirm('Reset all daily tasks to unchecked?')) {
+    Object.values(S.dailyOps).forEach(items => items.forEach(t => t.done = false));
+    saveAll(); renderPane();
+  }
+}
+
+// ── PROJECTS ──
+function renderProjects() {
+  const cols = { backlog: 'Backlog', progress: 'In Progress', done: 'Done' };
+  return `<div class="pane">
+    <div class="section-title">Project Board</div>
+    <div class="grid-3">
+      ${Object.entries(cols).map(([key, label]) => `
+        <div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.8rem;display:flex;justify-content:space-between">
+            ${label}
+            <span class="badge badge-accent">${S.projects.filter(p=>p.col===key).length}</span>
+          </div>
+          ${S.projects.filter(p=>p.col===key).map((p,_,arr) => {
+            const idx = S.projects.indexOf(p);
+            return `<div class="card" style="margin-bottom:.6rem;cursor:pointer" onclick="editProject(${idx})">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+                <strong style="font-size:.9rem">${p.title}</strong>
+                <span class="badge ${p.priority==='high'?'badge-danger':p.priority==='medium'?'badge-warn':'badge-ok'}">${p.priority}</span>
+              </div>
+              <div style="font-size:.8rem;color:var(--muted)">${p.desc}</div>
+              <div style="font-size:.7rem;color:var(--muted);margin-top:.3rem">${p.created}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      `).join('')}
+    </div>
+    <div style="margin-top:1rem"><button class="btn btn-primary" onclick="addProject()">+ New Project</button></div>
+  </div>`;
+}
+
+// ── TIMELINE ──
+function renderTimeline() {
+  return `<div class="pane">
+    <div class="section-title">Roadmap to Freedom</div>
+    <div style="max-width:800px">
+      <div class="timeline-line">
+        ${S.timeline.map((t,i) => `
+          <div class="tl-item ${t.current?'current':''}">
+            <div class="tl-dot"></div>
+            <h4>${t.title}</h4>
+            <div class="tl-date">${t.range}</div>
+            <div class="tl-desc">${t.desc}</div>
+            <div style="margin-top:.5rem">
+              ${(t.milestones||[]).map(m => `<div style="font-size:.8rem;padding:.2rem 0;color:${t.current?'var(--accent)':'var(--muted)'}">▸ ${m}</div>`).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── NOTES ──
+// ── FILES ──
+function renderFiles() {
+  const FILES = {
+    'Website — Sales Pages': [
+      { name: 'Personal Blueprint ($97)', file: 'sales_page_personal_blueprint.html', type: 'html', desc: 'Entry-level Blueprint Code™ reading page' },
+      { name: 'Deep Dive Audio ($297)', file: 'sales_page_deep_dive_audio.html', type: 'html', desc: 'Premium audio reading with full breakdown' },
+      { name: 'Ancestral Pattern ($397)', file: 'sales_page_ancestral_pattern.html', type: 'html', desc: 'Generational pattern & lineage reading' },
+      { name: 'Strategic Timing ($497)', file: 'sales_page_strategic_timing.html', type: 'html', desc: 'Personal year/month cycle timing reading' },
+      { name: 'Annual Forecast ($997)', file: 'sales_page_annual_forecast.html', type: 'html', desc: 'Full year forecast package with quarterly deep dives' },
+      { name: 'Readings Hub Page', file: 'readings_page_PASTE_THIS.html', type: 'html', desc: 'Hub page linking to all reading offerings' },
+    ],
+    'Website — Code to Paste': [
+      { name: 'Homepage HTML', file: 'homepage_code_PASTE_THIS.txt', type: 'txt', desc: 'Full homepage code with Blueprint Code™ branding & fixed Book Now links' },
+      { name: 'Mobile Menu Fix CSS', file: 'mobile_menu_fix_CSS.txt', type: 'css', desc: 'Astra theme mobile menu override — dark background fix' },
+      { name: 'Deep Dive Audio (Paste)', file: 'PASTE_1_deep_dive_audio.html', type: 'html', desc: 'WordPress-ready paste version' },
+      { name: 'Strategic Timing (Paste)', file: 'PASTE_2_strategic_timing.html', type: 'html', desc: 'WordPress-ready paste version' },
+      { name: 'Ancestral Pattern (Paste)', file: 'PASTE_3_ancestral_pattern.html', type: 'html', desc: 'WordPress-ready paste version' },
+      { name: 'Personal Blueprint (Paste)', file: 'PASTE_4_personal_blueprint.html', type: 'html', desc: 'WordPress-ready paste version' },
+      { name: 'Annual Forecast (Paste)', file: 'PASTE_5_annual_forecast.html', type: 'html', desc: 'WordPress-ready paste version' },
+    ],
+    'Business Operations': [
+      { name: 'Website Update Checklist', file: 'Website_Master_Update_Checklist.xlsx', type: 'xlsx', desc: 'Master checklist for all website updates & status' },
+      { name: 'Mission Control Dashboard', file: 'mission_control.html', type: 'html', desc: 'This dashboard — your command center' },
+    ],
+    'Live Website Pages': [
+      { name: 'Homepage', url: 'https://www.anilgunjal.com/', type: 'link', desc: 'anilgunjal.com — Blueprint Code™ branded homepage' },
+      { name: 'Personal Blueprint', url: 'https://www.anilgunjal.com/personal-blueprint/', type: 'link', desc: '$97 reading sales page (LIVE)' },
+      { name: 'Deep Dive Audio', url: 'https://www.anilgunjal.com/deep-dive-audio/', type: 'link', desc: '$297 reading sales page (LIVE)' },
+      { name: 'Ancestral Pattern', url: 'https://www.anilgunjal.com/ancestral-pattern/', type: 'link', desc: '$397 reading sales page (LIVE)' },
+      { name: 'Strategic Timing', url: 'https://www.anilgunjal.com/strategic-timing/', type: 'link', desc: '$497 reading sales page (LIVE)' },
+      { name: 'Annual Forecast', url: 'https://www.anilgunjal.com/annual-forecast/', type: 'link', desc: '$997 reading sales page (LIVE)' },
+      { name: 'Readings Hub', url: 'https://www.anilgunjal.com/readings/', type: 'link', desc: 'All readings overview page (LIVE)' },
+      { name: "Gentleman's Vault", url: 'https://www.anilgunjal.com/gentlemens-vault/', type: 'link', desc: 'Interest list / waitlist page (LIVE)' },
+      { name: 'UGC Website', url: 'https://www.anilcreates.com/', type: 'link', desc: 'UGC creator business site' },
+    ],
+    'Payment Links (GHL)': [
+      { name: 'Personal Blueprint — $97', url: 'https://api.spiritualtech.com/payment-link/698a9f4ce90aca50568dec80', type: 'link', desc: 'Direct payment link' },
+      { name: 'Deep Dive Audio — $297', url: 'https://api.spiritualtech.com/payment-link/69a32fee3413b574b1fb5e4d', type: 'link', desc: 'Direct payment link' },
+      { name: 'Ancestral Pattern — $397', url: 'https://api.spiritualtech.com/payment-link/69a330363413b535f8fb5e92', type: 'link', desc: 'Direct payment link' },
+      { name: 'Strategic Timing — $497', url: 'https://api.spiritualtech.com/payment-link/69a3300e3413b566b6fb5e5b', type: 'link', desc: 'Direct payment link' },
+      { name: 'Annual Forecast — $997', url: 'https://api.spiritualtech.com/payment-link/69a3304f84b2d7253c584842', type: 'link', desc: 'Direct payment link' },
+    ],
+  };
+
+  const typeIcon = { html: 'HTML', xlsx: 'XLS', txt: 'TXT', css: 'CSS', doc: 'DOC', link: '🔗' };
+  const typeClass = { html: 'html', xlsx: 'xlsx', txt: 'txt', css: 'css', doc: 'doc', link: 'link' };
+
+  let html = '<div class="pane"><div class="section-title">File Hub — Everything We\'ve Built</div>';
+
+  for (const [section, files] of Object.entries(FILES)) {
+    html += `<div class="file-section"><h3>${section}</h3><div class="file-grid">`;
+    for (const f of files) {
+      const href = f.url || f.file;
+      const target = f.url ? ' target="_blank"' : '';
+      const isLink = !!f.url;
+      html += `<a class="file-card" href="${href}"${target}>
+        <div class="file-icon ${typeClass[f.type]}">${typeIcon[f.type]}</div>
+        <div class="file-info">
+          <h4>${f.name}</h4>
+          <p>${f.desc}</p>
+        </div>
+        ${isLink ? '<span class="file-badge" style="background:rgba(46,134,255,.15);color:var(--accent)">Open ↗</span>' : '<span class="file-badge" style="background:rgba(62,213,152,.15);color:var(--ok)">Local File</span>'}
+      </a>`;
+    }
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function renderNotes() {
+  return `<div class="pane">
+    <div class="section-title">Notes</div>
+    <textarea class="notes-area" onchange="S.notes=this.value;saveAll()">${S.notes}</textarea>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// MODALS & INTERACTIONS
+// ═══════════════════════════════════════════
+function openModal(html) { document.getElementById('modalBox').innerHTML = html; document.getElementById('modalBg').classList.add('show'); }
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
+
+function editRevenue() {
+  openModal(`
+    <h3>Update Revenue</h3>
+    <div class="field"><label>Total Revenue This Month</label><input class="inp" id="mRev" type="number" value="${S.rev}"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="S.rev=parseInt($('#mRev').value)||0;saveAll();closeModal();renderPane()">Save</button>
+    </div>
+  `);
+}
+
+function editMonthlyGoal() {
+  openModal(`
+    <h3>Edit Monthly Goal</h3>
+    <div class="field"><label>Monthly Revenue Goal</label><input class="inp" id="mGoal" type="number" value="${S.monthlyGoal}"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="S.monthlyGoal=parseInt($('#mGoal').value)||2000;saveAll();closeModal();renderPane()">Save</button>
+    </div>
+  `);
+}
+
+function addClient() {
+  openModal(`
+    <h3>Add Client</h3>
+    <div class="field"><label>Brand Name</label><input class="inp" id="cName"></div>
+    <div class="field"><label>Deal Value ($)</label><input class="inp" id="cVal" type="number"></div>
+    <div class="field"><label>Type</label><select class="inp" id="cType"><option>UGC</option><option>Reading</option><option>Vault</option></select></div>
+    <div class="field"><label>Status</label><select class="inp" id="cStat"><option>pending</option><option>active</option><option>churned</option></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClient()">Add</button>
+    </div>
+  `);
+}
+
+function saveClient() {
+  const c = { name: $('#cName').value, value: parseInt($('#cVal').value)||0, type: $('#cType').value, status: $('#cStat').value, date: today() };
+  if (c.name) { S.clients.push(c); addActivity(`New client: ${c.name} — ${money(c.value)}`); closeModal(); renderPane(); }
+}
+
+function editClient(i) {
+  const c = S.clients[i];
+  openModal(`
+    <h3>Edit Client</h3>
+    <div class="field"><label>Brand Name</label><input class="inp" id="cName" value="${c.name}"></div>
+    <div class="field"><label>Deal Value ($)</label><input class="inp" id="cVal" type="number" value="${c.value}"></div>
+    <div class="field"><label>Type</label><select class="inp" id="cType"><option ${c.type==='UGC'?'selected':''}>UGC</option><option ${c.type==='Reading'?'selected':''}>Reading</option><option ${c.type==='Vault'?'selected':''}>Vault</option></select></div>
+    <div class="field"><label>Status</label><select class="inp" id="cStat"><option ${c.status==='pending'?'selected':''}>pending</option><option ${c.status==='active'?'selected':''}>active</option><option ${c.status==='churned'?'selected':''}>churned</option></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="S.clients.splice(${i},1);saveAll();closeModal();renderPane()">Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="S.clients[${i}]={name:$('#cName').value,value:parseInt($('#cVal').value)||0,type:$('#cType').value,status:$('#cStat').value,date:'${c.date}'};saveAll();closeModal();renderPane()">Save</button>
+    </div>
+  `);
+}
+
+function addProject() {
+  openModal(`
+    <h3>New Project</h3>
+    <div class="field"><label>Title</label><input class="inp" id="pTitle"></div>
+    <div class="field"><label>Description</label><textarea class="inp" id="pDesc" rows="2"></textarea></div>
+    <div class="field"><label>Priority</label><select class="inp" id="pPri"><option>high</option><option>medium</option><option>low</option></select></div>
+    <div class="field"><label>Column</label><select class="inp" id="pCol"><option value="backlog">Backlog</option><option value="progress">In Progress</option><option value="done">Done</option></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Add</button>
+    </div>
+  `);
+}
+
+function saveProject() {
+  const p = { title: $('#pTitle').value, desc: $('#pDesc').value, priority: $('#pPri').value, col: $('#pCol').value, created: today() };
+  if (p.title) { S.projects.push(p); addActivity(`New project: ${p.title}`); closeModal(); renderPane(); }
+}
+
+function editProject(i) {
+  const p = S.projects[i];
+  openModal(`
+    <h3>Edit Project</h3>
+    <div class="field"><label>Title</label><input class="inp" id="pTitle" value="${p.title}"></div>
+    <div class="field"><label>Description</label><textarea class="inp" id="pDesc" rows="2">${p.desc}</textarea></div>
+    <div class="field"><label>Priority</label><select class="inp" id="pPri"><option ${p.priority==='high'?'selected':''}>high</option><option ${p.priority==='medium'?'selected':''}>medium</option><option ${p.priority==='low'?'selected':''}>low</option></select></div>
+    <div class="field"><label>Column</label><select class="inp" id="pCol"><option value="backlog" ${p.col==='backlog'?'selected':''}>Backlog</option><option value="progress" ${p.col==='progress'?'selected':''}>In Progress</option><option value="done" ${p.col==='done'?'selected':''}>Done</option></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="S.projects.splice(${i},1);saveAll();closeModal();renderPane()">Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="S.projects[${i}]={title:$('#pTitle').value,desc:$('#pDesc').value,priority:$('#pPri').value,col:$('#pCol').value,created:'${p.created}'};saveAll();closeModal();renderPane()">Save</button>
+    </div>
+  `);
+}
+
+function togglePriority(i) {
+  S.priorities[i].done = !S.priorities[i].done;
+  if (S.priorities[i].done) addActivity(`Priority done: ${S.priorities[i].text}`);
+  saveAll(); renderPane();
+}
+
+function addPriority() {
+  const inp = document.getElementById('newPri');
+  if (inp && inp.value.trim()) { S.priorities.push({ text: inp.value.trim(), done: false }); saveAll(); renderPane(); }
+}
+
+function editFollowers() {
+  openModal(`
+    <h3>Update Followers</h3>
+    <div class="field"><label>TikTok</label><input class="inp" id="fTik" type="number" value="${S.social.tiktok}"></div>
+    <div class="field"><label>Instagram</label><input class="inp" id="fIg" type="number" value="${S.social.instagram}"></div>
+    <div class="field"><label>YouTube</label><input class="inp" id="fYt" type="number" value="${S.social.youtube}"></div>
+    <div class="field"><label>Facebook</label><input class="inp" id="fFb" type="number" value="${S.social.facebook}"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="S.social.tiktok=parseInt($('#fTik').value)||0;S.social.instagram=parseInt($('#fIg').value)||0;S.social.youtube=parseInt($('#fYt').value)||0;S.social.facebook=parseInt($('#fFb').value)||0;saveAll();closeModal();renderPane()">Save</button>
+    </div>
+  `);
+}
+
+function resetMonth() {
+  openModal(`
+    <h3>Reset for New Month</h3>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">This will archive current month's revenue into the chart, reset all counters to zero, and start fresh. This cannot be undone.</p>
+    <div class="field"><label>New Month Name (e.g. Apr)</label><input class="inp" id="newMonthName" placeholder="Apr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmResetMonth()">Reset Everything</button>
+    </div>
+  `);
+}
+
+function confirmResetMonth() {
+  const newMonth = document.getElementById('newMonthName').value.trim() || 'New';
+  // roll current month into YTD
+  S.ytd.prevRev += S.rev;
+  S.ytd.readingsSold += S.readings.reduce((s,r) => s + r.sold, 0);
+  S.ytd.readingsRev += totalReadingsRev();
+  S.ytd.outreachSent += S.outreach.sent;
+  S.ytd.outreachReplied += S.outreach.replied;
+  // archive current rev into chart
+  const lastMonth = S.revMonths[S.revMonths.length - 1];
+  if (lastMonth) lastMonth.amount = S.rev;
+  S.revMonths.push({ month: newMonth, amount: 0 });
+  if (S.revMonths.length > 6) S.revMonths.shift();
+  // reset monthly counters
+  S.rev = 0;
+  S.readings.forEach(r => r.sold = 0);
+  S.outreach = { sent: 0, replied: 0, booked: 0 };
+  S.priorities.forEach(p => p.done = false);
+  Object.values(S.dailyOps).forEach(items => items.forEach(t => t.done = false));
+  S.activity = [{ time: new Date().toISOString().slice(0,10) + ' 00:00', text: `New month: ${newMonth} — fresh start` }];
+  saveAll();
+  closeModal();
+  renderPane();
+}
+
+// ═══════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '8') {
+    e.preventDefault();
+    const idx = parseInt(e.key) - 1;
+    if (TABS[idx]) switchTab(TABS[idx].name);
+  }
+});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+renderTabs();
+renderPane();
+</script>
+</body>
+</html>
