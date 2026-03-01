@@ -321,6 +321,11 @@ const S = {
   outreach: load('outreach', { sent: 0, replied: 0, booked: 0 }),
   social: load('social', { tiktok: 500, instagram: 300, youtube: 150, facebook: 50 }),
   ytd: load('ytd', { prevRev: 920, readingsSold: 5, readingsRev: 545, ugcRev: 375, outreachSent: 115, outreachReplied: 0 }),
+  ugc: load('ugc', {
+    loomsSent: 0, coldEmails: 0, linkedinSeqs: 0, backstageReqs: 0, marketplaceApps: 0,
+    dealsThisMonth: 0, revenueThisMonth: 0, retainers: 0, igFollowers: 0, igPosts: 0,
+    contentDay: 0
+  }),
 };
 
 // persist helpers
@@ -330,7 +335,7 @@ function saveAll() {
   save('clients', S.clients); save('readings', S.readings); save('revMonths', S.revMonths);
   save('todayTasks', S.todayTasks); save('dailyOps', S.dailyOps); save('projects', S.projects);
   save('timeline', S.timeline); save('notes', S.notes); save('outreach', S.outreach);
-  save('social', S.social); save('ytd', S.ytd);
+  save('social', S.social); save('ytd', S.ytd); save('ugc', S.ugc);
 }
 
 // ═══════════════════════════════════════════
@@ -342,6 +347,7 @@ const TABS = [
   { name: 'Revenue', icon: '◎' },
   { name: 'Readings', icon: '✦' },
   { name: 'Outreach', icon: '↗' },
+  { name: 'UGC', icon: '🎬' },
   { name: 'Projects', icon: '▦' },
   { name: 'Timeline', icon: '◈' },
   { name: 'Files', icon: '◉' },
@@ -411,6 +417,7 @@ function renderPane() {
     case 'Revenue': m.innerHTML = renderRevenue(); afterRevenue(); break;
     case 'Readings': m.innerHTML = renderReadings(); break;
     case 'Outreach': m.innerHTML = renderOutreach(); break;
+    case 'UGC': m.innerHTML = renderUGC(); break;
     case 'Projects': m.innerHTML = renderProjects(); break;
     case 'Timeline': m.innerHTML = renderTimeline(); break;
     case 'Files': m.innerHTML = renderFiles(); break;
@@ -420,27 +427,353 @@ function renderPane() {
 }
 
 // ═══════════════════════════════════════════
-// TODAY TAB — Scripts + Tasks + Captions
+// TODAY TAB — Week Planner with Day Selector
 // ═══════════════════════════════════════════
+
+// Numerology energy calculation
+function calcEnergy(m, d, y) {
+  let sum = String(m)+String(d)+String(y);
+  let total = sum.split('').reduce((a,c)=>a+parseInt(c),0);
+  while(total>9 && total!==11 && total!==22 && total!==33) total = String(total).split('').reduce((a,c)=>a+parseInt(c),0);
+  return total;
+}
+function calcSecondary(d) {
+  let total = String(d).split('').reduce((a,c)=>a+parseInt(c),0);
+  while(total>9 && total!==11 && total!==22 && total!==33) total = String(total).split('').reduce((a,c)=>a+parseInt(c),0);
+  return total;
+}
+
+const ENERGY_MEANING = {
+  1:'Leadership, new beginnings, independence',2:'Partnership, balance, sensitivity',3:'Creativity, expression, joy',
+  4:'Structure, discipline, foundation',5:'Change, freedom, movement',6:'Love, responsibility, healing',
+  7:'Introspection, truth, spiritual depth',8:'Power, abundance, authority',9:'Completion, wisdom, release',
+  11:'Intuition, spiritual awakening, mastery',22:'Master builder, big vision, legacy',33:'Master teacher, compassion, service'
+};
+
+// Week 1 data: Mar 2-8 (Sun Mar 1 = today, Mar 2 = Mon = Week 1 Day 1)
+const WEEK_DAYS = [
+  {
+    date: 'Monday, March 2', dateShort: 'Mar 2', dayOfWeek: 'Mon', month: 3, day: 2, year: 2026,
+    gvDay: 2, gvTitle: 'The Father Wound', gvWound: 'Father Wound / Inner Child',
+    gvHook: '"The way your father treated you is why you treat yourself the way you do."',
+    gvScript: `HOOK (3 sec):\n"The way your father treated you... is why you treat yourself the way you do."\n\nBODY (50-60 sec):\n"Think about the voice in your head. The one that says you're not doing enough. That you need to be stronger. That emotions are weakness.\n\nNow think about where you first heard that.\n\nFor most of us — it was Dad. Or the man who was supposed to be Dad. The one who showed you that love comes with conditions. That approval has to be earned. That real men don't cry.\n\nI spent 30 years trying to earn approval from a man who never gave it. And when I couldn't get it from him, I tried to get it from bosses, from women, from the bottle.\n\nThe father wound isn't about blaming your dad. It's about recognizing the pattern that's still running your life. The voice that says 'not enough' — that's not YOUR voice. That's his.\n\nAnd until you separate the two... you'll keep living someone else's definition of a man."\n\nCTA (10 sec):\n"If that hit home — comment 'father wound.' No judgment here. And comment your birthday — I'll tell you what your numbers say about the patterns you inherited."`,
+    gvCaption: `The voice that says "not enough" isn't yours.\n\nIt's your father's. Or the man who raised you. Or the one who wasn't there.\n\nYou've been running his program for decades.\n\nThe father wound isn't about blame. It's about recognition. Seeing the pattern. Choosing differently.\n\nComment "father wound" if this resonates.\nComment your birthday — I'll tell you what your numbers reveal about inherited patterns.`,
+    gvHashtags: '#fatherwound #innerchild #mentalhealth #healingjourney #blueprintcode',
+    ugcDay: 1, ugcTitle: 'The $15.2 Trillion Blind Spot', ugcFormat: 'Talking Head + Text Overlay', ugcTime: '5:30 PM EST',
+    ugcHook: '"Brands are ignoring a $15.2 TRILLION market. Here\'s why that\'s YOUR opportunity."',
+    ugcScript: `HOOK (3 sec):\n"Brands are leaving $15.2 trillion on the table. Let me explain."\n\nBODY (45-60 sec):\n"Gen X — people aged 40 to 60 — drives 31% of all retail spending in America. We control more household wealth than any other generation. $42 trillion.\n\nBut here's the wild part — only 5% of influencer and creator budgets target us. FIVE percent.\n\nSo brands are spending millions on 22-year-olds making content for an audience that isn't even buying their product.\n\nI'm 51. I work in tech. And I started creating UGC — user-generated content — for brands that actually want to reach real buyers. Not kids doing dance trends. Real people testing real products.\n\nIf you're over 40 and you've ever thought about content creation — this is your lane. Nobody else is in it."\n\nCTA (5 sec):\n"Follow me. I'm documenting the entire journey. Drop your age in the comments — I want to see who's here."`,
+    ugcCaption: `$15.2 trillion in spending power.\n5% of creator budgets.\n\nGen X is the most overlooked audience in marketing. Brands are hiring 22-year-olds to sell products to 47-year-olds.\n\nI'm 51, I work in tech, and I create content that actually reaches the people buying your products.\n\nDrop your age below — I want to see who's in this lane with me.`,
+    ugcHashtags: '#ugccreator #genx #contentcreator #ugc #creatoreconomy',
+    tasks: {
+      'Morning — Content (7:00-8:30 AM)': [
+        'Record daily numerology video (script below)',
+        'Post numerology video to TikTok, IG, YT, FB',
+        'Record GV Day 2 — "The Father Wound" (script below)',
+        'Post GV video to all platforms',
+        'Record UGC Day 1 — "$15.2 Trillion Blind Spot" (script below)',
+      ],
+      'Morning — Outreach (8:30-10:15 AM)': [
+        '5 Loom audit video pitches (highest priority!)',
+        '10 cold emails via Apollo/Bento',
+        '5 Backstage brand requests',
+        '3 marketplace applications',
+        'LinkedIn: comment on 5 target brand posts',
+        'Pause OLD outreach sequences (stop adding new contacts)',
+      ],
+      'Admin — Setup': [
+        'Paste updated GV page HTML into WordPress',
+        'Set up GHL automation (tag + auto-reply on GV form)',
+        'Start setting up new Lemlist sequences (Brand Direct)',
+        'Update Apollo lead lists — add fintech/health tech brands',
+      ],
+      'Evening — Engagement': [
+        'Post UGC reel at 5:30 PM EST',
+        'Reply to ALL comments on numerology video',
+        'Reply to ALL comments on GV video',
+        'Reply to birthday comments with Life Path insights',
+        'DM anyone who comments "father wound"',
+      ],
+    }
+  },
+  {
+    date: 'Tuesday, March 3', dateShort: 'Mar 3', dayOfWeek: 'Tue', month: 3, day: 3, year: 2026,
+    gvDay: 3, gvTitle: 'The Numbing', gvWound: 'Self-Destruction / Numbing',
+    gvHook: '"You\'re not relaxing. You\'re hiding."',
+    gvScript: `HOOK (3 sec):\n"You're not relaxing. You're hiding."\n\nBODY (50-60 sec):\n"That drink after work. The scroll at midnight. The Netflix binge until your brain shuts off.\n\nYou call it winding down. I call it what it is — numbing.\n\nI know because I was the king of it. For almost ten years, I drank every single night. Not because I loved drinking. Because I couldn't sit with silence. Because silence meant hearing the truth.\n\nThe truth that I wasn't happy. The truth that I was scared. The truth that underneath all the success and the hustle and the 'I'm good bro' — there was a man who didn't know how to feel anymore.\n\nSo I drank. I watched. I scrolled. I stayed busy. Anything to avoid the one thing that would actually help — sitting with the pain and letting it talk.\n\nThe numbing doesn't fix anything. It just delays the reckoning. And the longer you delay it, the louder it gets."\n\nCTA (10 sec):\n"If you know exactly what I'm talking about — you're not alone. Comment 'same' if this is your pattern. And drop your birthday — I'll tell you what your numbers say about what you're avoiding."`,
+    gvCaption: `That drink after work isn't relaxation. It's avoidance.\n\nThe scroll at midnight. The binge. The staying busy.\n\nYou're not winding down. You're running from something.\n\nI drank every night for almost 10 years. Not because I loved it. Because silence meant hearing the truth.\n\nThe numbing doesn't fix anything. It delays the reckoning.\n\nComment "same" if you know this pattern.\nComment your birthday — I'll tell you what you're avoiding.`,
+    gvHashtags: '#soberlife #numbing #mentalhealth #healingjourney #blueprintcode',
+    ugcDay: 2, ugcTitle: 'What Is UGC? (Education)', ugcFormat: 'Talking Head + B-Roll', ugcTime: '12:30 PM EST',
+    ugcHook: '"You\'ve seen UGC a thousand times. You just didn\'t know it had a name."',
+    ugcScript: `HOOK (3 sec):\n"You've seen this a thousand times. You just didn't know what it was called."\n\nBODY (40 sec):\n"Ever scroll past a video of someone unboxing a product at their kitchen table? Or testing an app on their phone? That's UGC — user-generated content.\n\nBrands pay creators like me $300 to $500 per video to film these. No massive following needed. No dancing. No lip-syncing.\n\nYou film yourself using a product the way a real person would, and the brand runs it as an ad.\n\nThe reason it works? People trust people who look like them. A 45-year-old dad testing a finance app is more believable than a model pretending to check her budget."\n\nCTA (5 sec):\n"Save this if you want to learn more. Tomorrow I'm showing you how I film these — my whole setup."`,
+    ugcCaption: `UGC = User-Generated Content.\n\nBrands pay real people $300-$500 per video to film product reviews, unboxings, and demos.\n\nNo followers needed. No dancing. No lip-syncing.\n\nJust be yourself using a product.\n\nSave this — tomorrow I'm showing my entire filming setup.`,
+    ugcHashtags: '#ugc #ugccreator #contentcreation #sidehustle #genxcreator',
+    tasks: {
+      'Morning — Content (7:00-8:30 AM)': [
+        'Record daily numerology video (script below)',
+        'Post numerology video to TikTok, IG, YT, FB',
+        'Record GV Day 3 — "The Numbing" (script below)',
+        'Post GV video to all platforms',
+        'Record UGC Day 2 — "What Is UGC?" (script below)',
+        'Post UGC reel at 12:30 PM EST',
+      ],
+      'Morning — Outreach (8:30-10:15 AM)': [
+        '5 Loom audit video pitches',
+        '10 cold emails via Apollo/Bento',
+        '5 Backstage brand requests',
+        '3 marketplace applications',
+        'LinkedIn: comment on 5 target brand posts',
+      ],
+      'Admin — Setup': [
+        'Finish setting up Lemlist Sequence 1 (Brand Direct LinkedIn)',
+        'Set up Lemlist Sequence 2 (Agency LinkedIn)',
+        'Film spec ad #1 — product you own (portfolio builder)',
+      ],
+      'Evening — Engagement': [
+        'Reply to ALL comments on all videos',
+        'Reply to birthday comments with Life Path insights',
+        'DM anyone who comments "same"',
+        'Check Instagram DMs for warm leads',
+      ],
+    }
+  },
+  {
+    date: 'Wednesday, March 4', dateShort: 'Mar 4', dayOfWeek: 'Wed', month: 3, day: 4, year: 2026,
+    gvDay: 4, gvTitle: 'The Emptiness', gvWound: 'Success Without Fulfillment',
+    gvHook: '"You hit every goal. So why do you feel nothing?"',
+    gvScript: `HOOK (3 sec):\n"You hit every goal. So why do you feel nothing?"\n\nBODY (50-60 sec):\n"The promotion. The house. The car. The family. You got everything society said would make you happy.\n\nAnd you feel... nothing.\n\nNot sad exactly. Not angry. Just... empty. Like you're watching your own life from behind glass.\n\nI know this feeling. I lived it for years. I'd close a deal, hit a target, and wait for the dopamine hit. Nothing. Buy something. Nothing. Get praised. Nothing.\n\nBecause the goals weren't MY goals. They were my father's goals. Society's goals. What I thought a man was supposed to achieve.\n\nNobody told me that success without purpose is just a dressed-up prison.\n\nThe emptiness isn't a sign that something is wrong with you. It's a signal that something inside you is trying to wake up. Something real wants to come through — but it can't, because every slot in your life is filled with someone else's definition of success."\n\nCTA (10 sec):\n"If you feel this — comment 'empty.' I promise you're not the only one. Comment your birthday and I'll show you what your Blueprint Code says about your real purpose."`,
+    gvCaption: `The promotion hit. The house closed. The goal was reached.\n\nAnd you felt... nothing.\n\nNot sad. Not angry. Just empty. Like watching your own life from behind glass.\n\nThe emptiness isn't a flaw. It's a signal. Something real wants to come through.\n\nComment "empty" if this is where you are.\nComment your birthday — I'll show you what your numbers say about your real purpose.`,
+    gvHashtags: '#emptiness #purposedriven #mentalhealth #masculinity #blueprintcode',
+    ugcDay: 3, ugcTitle: 'My Setup (Behind the Scenes)', ugcFormat: 'BTS', ugcTime: '5:30 PM EST',
+    ugcHook: '"This is everything I use to film UGC videos that brands pay $400+ for."',
+    ugcScript: `HOOK (3 sec):\n"This is my entire UGC setup. It costs less than a dinner out."\n\nBODY (45 sec):\n[Show each item as you talk about it]\n"iPhone — you don't need a camera. The phone you already have is enough.\n\nRing light — $25 on Amazon. Makes any room look professional.\n\nTripod with phone mount — $15. Lets me film hands-free.\n\nThat's it. Seriously.\n\nI film on my kitchen counter, in my home office, at my desk. Brands don't want Hollywood production. They want authentic. They want a real person in a real environment.\n\nThe magic isn't the equipment. It's the delivery. A real person who looks like their customer, talking honestly about the product."\n\nCTA (5 sec):\n"Want the exact tripod and light I use? Comment SETUP and I'll send you the links."`,
+    ugcCaption: `My full UGC setup:\n- iPhone (the one you already have)\n- $25 ring light\n- $15 tripod\n\nTotal: less than $50.\n\nBrands don't want Hollywood production. They want authentic.\n\nComment SETUP and I'll send you the exact links.`,
+    ugcHashtags: '#ugcsetup #contentcreation #ugccreator #behindthescenes #creatortools',
+    tasks: {
+      'Morning — Content (7:00-8:30 AM)': [
+        'Record daily numerology video (script below)',
+        'Post numerology video to TikTok, IG, YT, FB',
+        'Record GV Day 4 — "The Emptiness" (script below)',
+        'Post GV video to all platforms',
+        'Record UGC Day 3 — "My Setup BTS" (script below)',
+      ],
+      'Morning — Outreach (8:30-10:15 AM)': [
+        '5 Loom audit video pitches',
+        '10 cold emails via Apollo/Bento',
+        '5 Backstage brand requests',
+        '3 marketplace applications',
+        'LinkedIn: Post data drop (Sequence 5 format)',
+      ],
+      'Admin — Setup': [
+        'Set up Apollo Sequence 3 (Brand Direct Email)',
+        'Set up Apollo Sequence 4 (Agency Email)',
+        'Film spec ad #2 — tech/app product',
+      ],
+      'Evening — Engagement': [
+        'Post UGC reel at 5:30 PM EST',
+        'Reply to ALL comments on all videos',
+        'DM "SETUP" commenters with links',
+        'DM anyone who comments "empty"',
+      ],
+    }
+  },
+  {
+    date: 'Thursday, March 5', dateShort: 'Mar 5', dayOfWeek: 'Thu', month: 3, day: 5, year: 2026,
+    gvDay: 5, gvTitle: 'The Synchronicities', gvWound: 'Spiritual Awakening Entry Point',
+    gvHook: '"You keep seeing 1111? Let me tell you why."',
+    gvScript: `HOOK (3 sec):\n"You keep seeing 1111. And 222. And 333. Let me tell you why."\n\nBODY (50-60 sec):\n"You look at the clock — 11:11. You see it on receipts. License plates. Phone numbers.\n\nAnd part of you thinks it's a coincidence. But another part of you — the part that's been waking up — knows it's not.\n\nThose numbers are pattern recognitions. Your subconscious is picking up on frequencies that your conscious mind can't explain yet.\n\n1111 means alignment. It means you're at a threshold — something is trying to get your attention.\n\n222 means balance. Something in your life is out of alignment and the code is nudging you.\n\n333 means your gifts are ready. Whatever you've been holding back — it's time.\n\nI spent 20 years ignoring these signs. Drinking through them. Working through them. Until my body forced me to pay attention.\n\nThe numbers aren't random. They're YOUR code trying to speak to you. The question is — are you finally ready to listen?"\n\nCTA (10 sec):\n"Comment what number you keep seeing. I'll tell you exactly what it means for YOU. And drop your birthday — I'll decode your full Blueprint Code."`,
+    gvCaption: `1111. 222. 333. You keep seeing them.\n\nThat's not a coincidence. That's YOUR code trying to get your attention.\n\n1111 = alignment / threshold\n222 = something is off-balance\n333 = your gifts are ready\n\nI ignored these signs for 20 years. Don't make the same mistake.\n\nComment what number you keep seeing — I'll tell you what it means.\nComment your birthday for your full Blueprint Code.`,
+    gvHashtags: '#1111 #angelnumbers #synchronicity #spiritualawakening #blueprintcode',
+    ugcDay: 4, ugcTitle: 'Spec Ad Demo (Show Don\'t Tell)', ugcFormat: 'UGC Spec Ad', ugcTime: '12:30 PM EST',
+    ugcHook: '"This is a spec ad I filmed in 10 minutes. Brands pay $400+ for this."',
+    ugcScript: `HOOK (3 sec):\n"Here's what a $400 UGC video looks like."\n\nBODY (30 sec):\n[Film yourself using ANY product you own — a tech gadget, an app, a grooming product]\n"I've been using [PRODUCT] for about two weeks now and here's what I didn't expect...\n\n[Share one genuine observation — the texture, the speed, how it fits into your routine]\n\nLook, I've tried a lot of [CATEGORY] products. Most of them are marketing fluff. This one actually [SPECIFIC BENEFIT].\n\nIf you're [AGE GROUP / DEMO], this is the one."\n\n[TEXT OVERLAY at end: "Spec Ad — AnilCreates.com"]\n\nCTA:\n"This took me 10 minutes to film. Brands pay $400-$500 for these. Follow for more."`,
+    ugcCaption: `Filmed this spec ad in my kitchen in 10 minutes.\n\nBrands pay $400-$500 for content like this.\n\nThe key: be a real person using a real product. No script reading. No fake excitement.\n\nIf you're over 40 and curious about UGC — follow me. I'm proving you don't need to be 22 to do this.`,
+    ugcHashtags: '#specad #ugcexample #ugccreator #contentcreation #genxcreator',
+    tasks: {
+      'Morning — Content (7:00-8:30 AM)': [
+        'Record daily numerology video (script below)',
+        'Post numerology video to TikTok, IG, YT, FB',
+        'Record GV Day 5 — "Synchronicities" (script below)',
+        'Post GV video to all platforms',
+        'Film UGC spec ad #1 demo (script below)',
+        'Post UGC spec ad at 12:30 PM EST',
+      ],
+      'Morning — Outreach (8:30-10:15 AM)': [
+        '5 Loom audit video pitches',
+        '10 cold emails via Apollo/Bento',
+        '5 Backstage brand requests',
+        '3 marketplace applications',
+        'LinkedIn: comment on 5 target brand posts',
+      ],
+      'Admin': [
+        'Start enrolling new contacts into Lemlist + Apollo sequences',
+        'Film spec ad #3 — grooming/health product',
+      ],
+      'Evening — Engagement': [
+        'Reply to ALL comments on all videos',
+        'Reply to number synchronicity comments (1111, 222, 333)',
+        'DM anyone showing strong engagement on GV content',
+      ],
+    }
+  },
+  {
+    date: 'Friday, March 6', dateShort: 'Mar 6', dayOfWeek: 'Fri', month: 3, day: 6, year: 2026,
+    gvDay: 6, gvTitle: 'The Brotherhood', gvWound: 'Male Loneliness',
+    gvHook: '"You\'re not broken. You\'re just alone with it."',
+    gvScript: `HOOK (3 sec):\n"You're not broken. You're just alone with it."\n\nBODY (50-60 sec):\n"When was the last time you told another man — a friend, a brother, anyone — what you're actually going through?\n\nNot the highlight reel. Not 'business is good.' The real stuff. The fear. The doubt. The loneliness that lives inside a crowded life.\n\nMost men have zero people they can be honest with. ZERO.\n\nYou've got a wife who's tired of hearing it. Friends who only talk about sports and business. A father who taught you feelings are weakness.\n\nSo you carry it alone. And you tell yourself that's what strong men do.\n\nBut isolation isn't strength. It's a cage.\n\nI spent years thinking I was the only one who felt like this. Turns out — every man I've talked to on this journey says the same thing. 'I thought it was just me.'\n\nIt's not just you. And the first step out of that cage is saying it out loud — to someone who actually gets it."\n\nCTA (10 sec):\n"If you've never had a man in your life you could be real with — I get it. Something's coming that's going to change that. Comment your birthday — I'll tell you something about your code that explains why you've always felt different."`,
+    gvCaption: `When was the last time you told another man what you're really going through?\n\nNot the highlight reel. The real stuff.\n\nMost men have zero people they can be honest with.\n\nIsolation isn't strength. It's a cage.\n\n"I thought it was just me." — Every man I've ever talked to on this path.\n\nIt's not just you.\n\nComment your birthday — I'll tell you why you've always felt different.`,
+    gvHashtags: '#maleloneliness #brotherhood #mentalhealth #vulnerability #blueprintcode',
+    ugcDay: 5, ugcTitle: 'Why Gen X Creators Are in Demand', ugcFormat: 'Talking Head + Data', ugcTime: '5:30 PM EST',
+    ugcHook: '"If you\'re over 40, brands need you more than they need another 22-year-old creator."',
+    ugcScript: `HOOK (3 sec):\n"If you're over 40, you're sitting on a goldmine and you don't even know it."\n\nBODY (50-60 sec):\n[Use text overlays showing each stat as you say it]\n"Here's what nobody's telling you about the creator economy:\n\n74% of Gen Xers switched brands in the past year. They're actively movable — but only if the content feels real.\n\n92% of Gen X uses social media daily. They're not offline. They're just ignored.\n\nGen X outspends Millennials AND Gen Z on average purchases. We're not window shopping. We're buying.\n\nBut 95% of creator content targets the 18-34 demo. So brands are making content that doesn't match their actual buyer.\n\nThat's the gap. And if you're over 40 with life experience and authenticity — you ARE the solution."\n\nCTA (5 sec):\n"Know someone over 40 who should hear this? Send this to them."`,
+    ugcCaption: `The numbers don't lie:\n- 74% of Gen X switched brands last year\n- 92% use social media daily\n- We outspend every other generation\n- But only 5% of creator content targets us\n\nBrands need creators who ARE the audience. If you're 40+, you're the answer.\n\nTag someone over 40 who needs to see this.`,
+    ugcHashtags: '#genx #creatoreconomy #ugc #over40 #contentcreation',
+    tasks: {
+      'Morning — Content (7:00-8:30 AM)': [
+        'Record daily numerology video (script below)',
+        'Post numerology video to TikTok, IG, YT, FB',
+        'Record GV Day 6 — "The Brotherhood" (script below)',
+        'Post GV video to all platforms',
+        'Record UGC Day 5 — "Gen X Demand" (script below)',
+      ],
+      'Morning — Outreach (8:30-10:15 AM)': [
+        '5 Loom audit video pitches',
+        '10 cold emails via Apollo/Bento',
+        '5 Backstage brand requests',
+        '3 marketplace applications',
+        'LinkedIn: Post BTS content (Sequence 5 format)',
+      ],
+      'Admin': [
+        'Review outreach metrics — replies, connection accepts',
+        'Enroll 10-15 new contacts into sequences',
+      ],
+      'Evening — Engagement': [
+        'Post UGC reel at 5:30 PM EST',
+        'Reply to ALL comments on all videos',
+        'Reply to birthday comments with Life Path insights',
+        'DM strong engagers from the week',
+      ],
+    }
+  },
+  {
+    date: 'Saturday, March 7', dateShort: 'Mar 7', dayOfWeek: 'Sat', month: 3, day: 7, year: 2026,
+    gvDay: 7, gvTitle: 'Anil\'s Story (Personal)', gvWound: 'Vulnerability / The Awakening',
+    gvHook: '"At 2am in a strip club, I realized I was terrified of being loved."',
+    gvScript: `HOOK (3 sec):\n"At 2am in a strip club, I realized I was terrified of being loved."\n\nBODY (60-75 sec):\n"I'm going to tell you something I've never said on camera.\n\nFrom 1997 to 2006, I drank and used drugs almost every day. Not because I was partying. Because I was in so much pain I couldn't function sober.\n\nI grew up being told I was useless. That I'd never amount to anything. My twinflame was taken from me by my own family. And every time someone tried to love me after that — I ran.\n\nI'd go to strip clubs. Not for what you think. I went because it was the only place someone would sit with me without asking questions. The only place I could pretend connection existed without actually risking anything.\n\nAnd one night at 2am, sitting there with a drink I didn't want and a woman who didn't know my name — it hit me. I'm not here because I love this. I'm here because I'm TERRIFIED of real love. Because every time I let someone in, it got taken away.\n\nThat was the night something cracked. Not fixed — cracked. And from that crack, eventually, light got in.\n\nThat's what the awakening actually looks like. Not crystals and meditation music. It's your lowest moment showing you who you really are."\n\nCTA (10 sec):\n"This video isn't easy to post. But if ONE man watching this sees himself in my story — it's worth it. Comment your birthday. Let me show you what your code says about the pain you've been carrying."`,
+    gvCaption: `At 2am in a strip club, it hit me.\n\nI wasn't there for the women. I was there because it was the only place I could sit with someone without actually being known.\n\nFor almost 10 years I drank, used, and numbed — because real connection terrified me.\n\nThe awakening doesn't start with crystals. It starts with your lowest moment showing you who you really are.\n\nIf you see yourself in this story — you're not alone.\nComment your birthday. Let me tell you what your code says about the pain you've been carrying.`,
+    gvHashtags: '#vulnerability #healingjourney #spiritualawakening #mentalhealth #blueprintcode',
+    ugcDay: 6, ugcTitle: '5 UGC Video Types Brands Pay For', ugcFormat: 'Carousel', ugcTime: '10:00 AM EST',
+    ugcHook: '"5 types of UGC videos brands actually pay for (save this list)"',
+    ugcScript: `[CAROUSEL or STATIC IMAGE POST]\nSlide 1: "5 Types of UGC Videos Brands Actually Pay For"\nSlide 2: "1. PRODUCT DEMO — Film yourself using the product naturally."\nSlide 3: "2. UNBOXING — First reactions. Open it on camera."\nSlide 4: "3. PROBLEM / SOLUTION — Start with the pain point."\nSlide 5: "4. TESTIMONIAL — Tell a story."\nSlide 6: "5. COMPARISON — 'I tried 3 products. Here's the winner.'"\nSlide 7: "Which one should I demo next? Comment below."`,
+    ugcCaption: `Save this.\n\n5 UGC video styles that brands pay $300-$500 for:\n1. Product Demo\n2. Unboxing\n3. Problem/Solution\n4. Testimonial\n5. Comparison\n\nYou don't need to invent a format. You just need to be real.\n\nWhich one should I film next? Comment below.`,
+    ugcHashtags: '#ugctips #contentcreation #ugccreator #branddeal #creatoreconomy',
+    tasks: {
+      'Morning — Content (7:00-9:00 AM)': [
+        'Record daily numerology video (script below)',
+        'Post numerology video to TikTok, IG, YT, FB',
+        'Record GV Day 7 — "Anil\'s Story" (script below) — THIS IS THE BIG ONE',
+        'Post GV video to all platforms',
+        'Create UGC carousel graphics — "5 UGC Video Types"',
+        'Post UGC carousel at 10:00 AM EST',
+      ],
+      'Weekend — Outreach (lighter)': [
+        'Schedule Monday\'s Loom targets (research 5 brands)',
+        'Review and respond to any DMs/replies from the week',
+        'LinkedIn: engage with weekend posts from target brands',
+      ],
+      'Weekend — Prep': [
+        'Review Week 1 outreach metrics in Mission Control',
+        'Batch-plan next 5 Loom audit targets for Monday',
+        'Review GV comment engagement — count birthday comments',
+      ],
+      'Evening — Engagement': [
+        'Reply to ALL comments across all platforms',
+        'Heavy engagement on GV personal story video — respond to EVERY comment',
+        'DM anyone who shares the GV story video',
+      ],
+    }
+  },
+  {
+    date: 'Sunday, March 8', dateShort: 'Mar 8', dayOfWeek: 'Sun', month: 3, day: 8, year: 2026,
+    gvDay: 8, gvTitle: 'The Announcement', gvWound: 'N/A — This is the REVEAL',
+    gvHook: '"I\'m building something I wish existed when I was at my lowest."',
+    gvScript: `HOOK (3 sec):\n"I'm building something I wish existed when I was at my lowest."\n\nBODY (60-75 sec):\n"For the past week I've been sharing things I've never said out loud. The mask. The father wound. The numbing. The emptiness. The loneliness.\n\nAnd the response has been... overwhelming. Hundreds of you said 'this is me.' DMs from men I've never met saying 'I thought I was the only one.'\n\nSo here's what I'm building.\n\nIt's called The Gentleman's Vault. A private community — exclusively for men — where the mask comes off.\n\nInside you'll get:\n• Weekly live group calls where we go DEEP — no surface-level motivational fluff\n• A full course built on the Blueprint Code — understanding the patterns that run your life\n• Emotional mastery training — because nobody taught us how to feel\n• Direct access to me — numerology readings, 1-on-1 guidance, real mentorship\n\nThis isn't therapy. This isn't a podcast. This is a brotherhood of men who are done performing and ready to be real.\n\nFounding member pricing is available for the first 25 men who join. After that, the price goes up.\n\nDoors open March 14."\n\nCTA (10 sec):\n"If something in you is saying 'this is what I need' — trust that. Link in bio to get on the founding member list. When doors open, you'll be first in."`,
+    gvCaption: `For the past week I've shared things I've never said out loud.\n\nThe mask. The father wound. The numbing. The emptiness.\n\nHundreds of you said "this is me."\n\nSo I'm building something I wish existed when I was at my lowest.\n\nThe Gentleman's Vault. A private brotherhood for men who are done performing and ready to be real.\n\n• Weekly live group calls\n• Blueprint Code courses\n• Emotional mastery training\n• Direct access to me\n\nFounding member spots: 25\nDoors open: March 14\n\nLink in bio to join the founding member list.`,
+    gvHashtags: '#gentlemansvault #brotherhood #menscommunity #spiritualawakening #blueprintcode',
+    ugcDay: 7, ugcTitle: 'Why I Started — Personal Story', ugcFormat: 'Talking Head (Raw)', ugcTime: '7:00 PM EST',
+    ugcHook: '"I\'m 51. I work a corporate tech job. And I started creating content 2 months ago. Here\'s why."',
+    ugcScript: `HOOK (3 sec):\n"I'm 51 years old, I work in corporate tech, and two months ago I started creating content. Here's why."\n\nBODY (60 sec):\n"For 20+ years I worked for other people. Good money. Good title. But I hit a point where I realized — I'm building someone else's dream.\n\nI started looking at the creator space and saw something nobody was talking about. Every UGC creator I found was 22, 25, maybe 30. All making content for brands whose actual customers are 45.\n\nI thought — I AM that customer. I'm 51. I test products the way a real buyer does. I don't fake excitement. I don't do trends. I just give my honest take.\n\nTwo months in, I've already closed brand deals. Not because I have a big following. Because I fill a gap that almost nobody else is filling.\n\nIf you're sitting in a corporate job thinking 'am I too old for this' — you're not. You're exactly who the market is missing."\n\nCTA (5 sec):\n"Comment YOUR AGE if you're over 40 and this hit home."`,
+    ugcCaption: `I'm 51. I work in tech. Two months ago I started creating UGC.\n\nNot because I wanted to be an influencer.\n\nBecause I realized brands are hiring 22-year-olds to talk to 47-year-olds. And that doesn't work.\n\nI am the audience. That's my edge.\n\nIf you're over 40 and thinking "is it too late?" — it's not. You're exactly who the market needs.\n\nComment your age if this resonated.`,
+    ugcHashtags: '#genxcreator #over40 #ugc #corporatelife #neverbetoolate',
+    tasks: {
+      'Morning — Content (7:00-9:00 AM)': [
+        'Record daily numerology video (script below)',
+        'Post numerology video to TikTok, IG, YT, FB',
+        'Record GV Day 8 — "THE ANNOUNCEMENT" (script below) — BIGGEST POST OF THE WEEK',
+        'Post GV announcement to ALL platforms',
+        'Record UGC Day 7 — "Why I Started" (script below)',
+        'Post UGC reel at 7:00 PM EST',
+      ],
+      'Sunday — GV Launch Push': [
+        'Post GV announcement on Facebook (link in FIRST COMMENT)',
+        'Share GV announcement to IG Story with poll sticker',
+        'DM top engagers from the week — personal invite to founding list',
+        'Send GV announcement email via GHL to interest list',
+      ],
+      'Sunday — Week 2 Prep': [
+        'Review Week 1 outreach numbers (looms, emails, replies)',
+        'Update Mission Control UGC metrics',
+        'Batch-research 10 Loom targets for Monday',
+        'Plan Week 2 LinkedIn posts',
+      ],
+      'Evening — Engagement': [
+        'Reply to ALL comments — especially GV announcement',
+        'DM everyone who comments on GV announcement',
+        'Reply to birthday comments with Life Path insights',
+        'Share GV announcement one more time to Stories before bed',
+      ],
+    }
+  },
+];
+
+let selectedDay = 0; // 0-6 index into WEEK_DAYS
+
 function renderToday() {
-  const dateStr = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  const allTasks = Object.values(S.todayTasks).flat();
-  const doneCount = allTasks.filter(t=>t.done).length;
-  const totalCount = allTasks.length;
-  const gvDay = Math.max(1, Math.ceil((new Date() - new Date('2026-03-01')) / 86400000 + 1));
+  const d = WEEK_DAYS[selectedDay];
+  const mainE = calcEnergy(d.month, d.day, d.year);
+  const secE = calcSecondary(d.day);
   const doorsIn = daysUntil('2026-03-14');
 
+  // Build task state key per day
+  const taskKey = 'weekTasks_' + d.dateShort.replace(/\s/g,'');
+  if (!S[taskKey]) {
+    S[taskKey] = {};
+    Object.entries(d.tasks).forEach(([section, items]) => {
+      S[taskKey][section] = items.map(t => ({text: t, done: false}));
+    });
+  }
+  const allTasks = Object.values(S[taskKey]).flat();
+  const doneCount = allTasks.filter(t=>t.done).length;
+
   let html = `<div class="pane">
+    <!-- Day Selector -->
+    <div style="display:flex;gap:4px;margin-bottom:1.2rem;flex-wrap:wrap">
+      ${WEEK_DAYS.map((wd,i) => `
+        <div class="tab ${i===selectedDay?'active':''} ${i===selectedDay?'today-tab':''}" onclick="selectedDay=${i};renderPane()" style="flex:1;min-width:80px;text-align:center;flex-direction:column;gap:2px">
+          <div style="font-size:.7rem;opacity:.7">${wd.dayOfWeek}</div>
+          <div style="font-size:.85rem;font-weight:700">${wd.dateShort}</div>
+        </div>
+      `).join('')}
+    </div>
+
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem">
       <div>
-        <h2 style="font-size:1.4rem;font-weight:800">${dateStr}</h2>
-        <div style="font-size:.85rem;color:var(--muted);margin-top:.2rem">GV Launch Day ${gvDay} of 14 · Doors open in ${doorsIn} days · ${doneCount}/${totalCount} tasks done</div>
-      </div>
-      <div style="display:flex;gap:.5rem">
-        <button class="btn btn-ghost btn-sm" onclick="resetTodayTasks()">↻ New Day</button>
+        <h2 style="font-size:1.4rem;font-weight:800">${d.date}</h2>
+        <div style="font-size:.85rem;color:var(--muted);margin-top:.2rem">
+          GV Day ${d.gvDay} of 14 · UGC Day ${d.ugcDay} of 30 · Doors in ${doorsIn} days · ${doneCount}/${allTasks.length} tasks
+        </div>
       </div>
     </div>
-    <div class="progress-bar" style="margin-bottom:2rem"><div class="progress-fill" style="width:${pct(doneCount,totalCount)}%;background:linear-gradient(90deg,var(--gold),#e8c84c)"></div></div>`;
+    <div class="progress-bar" style="margin-bottom:1.5rem"><div class="progress-fill" style="width:${pct(doneCount,allTasks.length)}%;background:linear-gradient(90deg,var(--gold),#e8c84c)"></div></div>`;
 
   // ── SCRIPT 1: Daily Numerology ──
   html += `
@@ -449,97 +782,60 @@ function renderToday() {
         <div>
           <h3>📹 Script 1 — Daily Numerology Video</h3>
           <div class="script-meta">
-            <span>⚡ Main Energy: <strong style="color:var(--gold)">5</strong></span>
-            <span>🔮 Secondary: <strong style="color:var(--gold)">1</strong></span>
-            <span>⏱️ 60-90 sec</span>
-            <span>📱 TikTok, IG, YT, FB</span>
+            <span>⚡ Main Energy: <strong style="color:var(--gold)">${mainE}</strong> — ${ENERGY_MEANING[mainE]||''}</span>
+            <span>🔮 Secondary: <strong style="color:var(--gold)">${secE}</strong></span>
           </div>
         </div>
-        <button class="copy-btn" onclick="copyText(document.getElementById('script1text').innerText)">📋 Copy Script</button>
+        <button class="copy-btn" onclick="copyText('Use the daily_script_prompt.md with date ${d.date} — Main Energy ${mainE}, Secondary ${secE}')">📋 Copy Info</button>
       </div>
-      <div class="script-body" id="script1text"><span class="label">HOOK (3 sec):</span>
-"If you feel restless today — good. That's on purpose."
-
-<span class="label">BODY (45-60 sec):</span>
-"March first. New month. And the energy today is a 5 with a secondary 1. That's one of the most electric combinations in the Blueprint Code.
-
-5 energy is movement. Change. Freedom. That itch you're feeling right now? The one that says 'something needs to shift'? That's not anxiety. That's the 5 telling you — MOVE.
-
-But here's what makes today different. The secondary energy is a 1. And 1 is leadership. New beginnings. You're not just moving — you're starting something.
-
-So if you've been sitting on an idea, a conversation, a decision — today is the day. The 5 gives you the courage to break the pattern. The 1 says you don't need anyone's permission to go first.
-
-The only trap today? Overthinking it. 5 energy moves FAST. If you try to plan every step before you take the first one, you'll freeze. Don't let the mind talk you out of what the gut already knows."
-
-<span class="label">REAL TALK (15 sec):</span>
-"Most people wait for January to start over. But the numbers don't care about the calendar. TODAY is your reset. The code says move — so move."
-
-<span class="label">CTA (5 sec):</span>
-"Comment your birthday below and I'll tell you what today means for YOUR numbers. Full breakdown — link in bio."</div>
-
-      <div class="caption-box">
-        <strong>Caption:</strong><br><br>
-March 1st energy: 5 with a secondary 1.<br><br>
-Translation? MOVE. START. LEAD.<br><br>
-That restless feeling isn't anxiety. It's the code telling you to stop planning and start doing.<br><br>
-5 breaks the pattern. 1 says go first.<br><br>
-👇 Drop your birthday — I'll tell you what today means for YOUR numbers.
+      <div style="padding:.8rem;background:rgba(201,168,76,.06);border-radius:8px;font-size:.85rem;color:var(--muted);line-height:1.6">
+        <strong style="color:var(--gold)">${d.date}</strong> · Main Energy: <strong>${mainE}</strong> (${ENERGY_MEANING[mainE]||''}) · Secondary: <strong>${secE}</strong><br>
+        Use the <em>daily_script_prompt.md</em> with any AI, or write your own using the energy meanings above.<br>
+        Platforms: TikTok, IG, YT, FB · 60-90 sec · CTA: "Comment your birthday"
       </div>
-      <div class="hashtag-row">#numerology #blueprintcode #spiritualawakening #march2026 #lifepath</div>
     </div>`;
 
-  // ── SCRIPT 2: GV Day 1 — The Mask ──
+  // ── SCRIPT 2: GV ──
   html += `
     <div class="script-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
         <div>
-          <h3>📹 Script 2 — GV Day 1: "The Mask"</h3>
+          <h3>📹 Script 2 — GV Day ${d.gvDay}: "${d.gvTitle}"</h3>
           <div class="script-meta">
-            <span>🎭 Wound: Emptiness / Inauthenticity</span>
+            <span>🎭 ${d.gvWound}</span>
             <span>⏱️ 60-75 sec</span>
-            <span>📱 TikTok, IG, YT, FB</span>
             <span class="badge badge-gold">GV LAUNCH</span>
           </div>
         </div>
-        <button class="copy-btn" onclick="copyText(document.getElementById('script2text').innerText)">📋 Copy Script</button>
+        <button class="copy-btn" onclick="copyText(document.getElementById('gvscript').innerText)">📋 Copy Script</button>
       </div>
-      <div class="script-body" id="script2text"><span class="label">HOOK (3 sec):</span>
-"When someone asks how you're doing... do you ever tell the truth?"
-
-<span class="label">BODY (50-60 sec):</span>
-"You say 'I'm good.' Every single time. Because what else are you gonna say?
-
-'I feel empty and I don't know why'?
-'I have everything I worked for and none of it hits anymore'?
-
-Nah. So you smile. You perform. You keep it moving.
-
-You got the career. The house. The family. Check, check, check. And at 2am when it's quiet and nobody needs anything from you — there's that voice. The one that whispers... 'is this really it?'
-
-I wore that mask for twenty years. 'I'm good, bro. I'm great.' Meanwhile I was destroying myself. Drinking every night. Numbing. Because the mask kept everyone comfortable — except me.
-
-It didn't crack until my body gave out. Pancreatitis. Diabetes. Lost hearing in my right ear. My body was SCREAMING what my mouth wouldn't say.
-
-The mask doesn't protect you, brother. It imprisons you."
-
-<span class="label">CTA (10 sec):</span>
-"If this hit different — drop a 🎭 in the comments. And if you want to know what's REALLY driving you under that mask, comment your birthday. I'll tell you something about yourself nobody's ever told you."</div>
-
-      <div class="caption-box">
-        <strong>Caption:</strong><br><br>
-You say "I'm good" because the truth is too heavy to hand to anyone.<br><br>
-But that weight doesn't disappear. It shows up in your body. Your sleep. Your drinking. Your marriage.<br><br>
-I wore the mask for 20 years. Pancreatitis. Diabetes. Lost hearing in one ear. My body screamed what my mouth wouldn't say.<br><br>
-The mask doesn't protect you. It imprisons you.<br><br>
-🎭 Drop a 🎭 if this is you.<br>
-👇 Comment your birthday — I'll tell you something about yourself no one's ever told you.
-      </div>
-      <div class="hashtag-row">#mentalhealth #masculinity #healingjourney #emotionalhealing #blueprintcode</div>
+      <div class="script-body" id="gvscript">${d.gvScript.replace(/\n/g,'<br>')}</div>
+      <div class="caption-box"><strong>Caption:</strong><br><br>${d.gvCaption.replace(/\n/g,'<br>')}</div>
+      <div class="hashtag-row">${d.gvHashtags}</div>
     </div>`;
 
-  // ── TODAY'S TASKS ──
+  // ── SCRIPT 3: UGC ──
+  html += `
+    <div class="script-card" style="border-color:rgba(46,134,255,.2)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
+        <div>
+          <h3>📹 Script 3 — UGC Day ${d.ugcDay}: "${d.ugcTitle}"</h3>
+          <div class="script-meta">
+            <span>🎬 ${d.ugcFormat}</span>
+            <span>⏱️ Post at ${d.ugcTime}</span>
+            <span class="badge badge-accent">UGC</span>
+          </div>
+        </div>
+        <button class="copy-btn" onclick="copyText(document.getElementById('ugcscript').innerText)">📋 Copy Script</button>
+      </div>
+      <div class="script-body" id="ugcscript">${d.ugcScript.replace(/\n/g,'<br>')}</div>
+      <div class="caption-box"><strong>Caption:</strong><br><br>${d.ugcCaption.replace(/\n/g,'<br>')}</div>
+      <div class="hashtag-row">${d.ugcHashtags}</div>
+    </div>`;
+
+  // ── TASKS ──
   html += `<div class="section-title gold">Today's Tasks</div>`;
-  const sections = Object.entries(S.todayTasks);
+  const sections = Object.entries(S[taskKey]);
   html += `<div class="grid-2">`;
   sections.forEach(([name, items]) => {
     const done = items.filter(t=>t.done).length;
@@ -550,45 +846,42 @@ The mask doesn't protect you. It imprisons you.<br><br>
         <div class="progress-bar" style="margin-bottom:.6rem"><div class="progress-fill" style="width:${pct(done,total)}%;background:var(--gold)"></div></div>
         ${items.map((t,i) => `
           <div class="check-item ${t.done?'done':''}">
-            <input type="checkbox" ${t.done?'checked':''} onchange="toggleTodayTask('${name.replace(/'/g,"\\'")}',${i})">
+            <input type="checkbox" ${t.done?'checked':''} onchange="toggleWeekTask('${taskKey}','${name.replace(/'/g,"\\'")}',${i})">
             <span>${t.text}</span>
           </div>
         `).join('')}
-        <div class="add-row">
-          <input class="inp" id="today_${name.replace(/[^a-z]/gi,'')}" placeholder="Add task..." onkeydown="if(event.key==='Enter')addTodayTask('${name.replace(/'/g,"\\'")}')">
-          <button class="btn btn-primary btn-sm" onclick="addTodayTask('${name.replace(/'/g,"\\'")}')">+</button>
-        </div>
       </div>
     </div>`;
   });
   html += `</div>`;
 
-  // ── TOMORROW PREVIEW ──
-  html += `
-    <div style="margin-top:2rem;padding:1.2rem;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:var(--r)">
-      <div style="font-size:.85rem;color:var(--gold);font-weight:700;margin-bottom:.3rem">📅 Tomorrow — GV Day 2: "The Father Wound"</div>
-      <div style="font-size:.85rem;color:var(--muted)">Hook: "The way your father treated you is why you treat yourself the way you do." — Full script ready in the content calendar.</div>
-    </div>`;
+  // ── NEXT DAY PREVIEW ──
+  if (selectedDay < WEEK_DAYS.length - 1) {
+    const next = WEEK_DAYS[selectedDay + 1];
+    html += `
+      <div style="margin-top:2rem;padding:1.2rem;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:var(--r)">
+        <div style="font-size:.85rem;color:var(--gold);font-weight:700;margin-bottom:.3rem">📅 Next: ${next.dateShort} — GV Day ${next.gvDay}: "${next.gvTitle}" + UGC Day ${next.ugcDay}: "${next.ugcTitle}"</div>
+        <div style="font-size:.85rem;color:var(--muted)">GV Hook: ${next.gvHook} · UGC: ${next.ugcFormat} at ${next.ugcTime}</div>
+      </div>`;
+  }
 
   html += `</div>`;
   return html;
 }
 
-function toggleTodayTask(section, i) {
-  S.todayTasks[section][i].done = !S.todayTasks[section][i].done;
-  if (S.todayTasks[section][i].done) addActivity(`Done: ${S.todayTasks[section][i].text}`);
-  saveAll(); renderPane();
-}
-
-function addTodayTask(section) {
-  const inp = document.getElementById('today_' + section.replace(/[^a-z]/gi,''));
-  if (inp && inp.value.trim()) { S.todayTasks[section].push({ text: inp.value.trim(), done: false }); saveAll(); renderPane(); }
+function toggleWeekTask(taskKey, section, i) {
+  if (!S[taskKey]) return;
+  S[taskKey][section][i].done = !S[taskKey][section][i].done;
+  if (S[taskKey][section][i].done) addActivity('Done: ' + S[taskKey][section][i].text);
+  save(taskKey, S[taskKey]); saveAll(); renderPane();
 }
 
 function resetTodayTasks() {
-  if (confirm('Reset all tasks for a new day? (Unchecks everything)')) {
-    Object.values(S.todayTasks).forEach(items => items.forEach(t => t.done = false));
-    saveAll(); renderPane();
+  const d = WEEK_DAYS[selectedDay];
+  const taskKey = 'weekTasks_' + d.dateShort.replace(/\s/g,'');
+  if (confirm('Reset all tasks for ' + d.dateShort + '?')) {
+    Object.values(S[taskKey]).forEach(items => items.forEach(t => t.done = false));
+    save(taskKey, S[taskKey]); renderPane();
   }
 }
 
@@ -897,6 +1190,194 @@ function editSocial(platform) {
   if (val !== null && !isNaN(val)) { S.social[platform] = parseInt(val); saveAll(); renderPane(); }
 }
 
+// ── UGC ──
+function renderUGC() {
+  const u = S.ugc;
+  const dailyTargets = [
+    { label: 'Loom Pitches', key: 'loomsSent', target: 5, color: 'var(--accent)' },
+    { label: 'Cold Emails', key: 'coldEmails', target: 10, color: 'var(--ok)' },
+    { label: 'LinkedIn Seqs', key: 'linkedinSeqs', target: 5, color: 'var(--warn)' },
+    { label: 'Backstage', key: 'backstageReqs', target: 5, color: 'var(--gold)' },
+    { label: 'Marketplace', key: 'marketplaceApps', target: 3, color: 'var(--accent2)' },
+  ];
+  const totalToday = dailyTargets.reduce((a,d) => a + u[d.key], 0);
+  const totalTarget = 28;
+
+  const contentCalendar = [
+    { day:1, date:'Mar 2', title:'The $15.2 Trillion Blind Spot', format:'Talking Head', time:'5:30 PM' },
+    { day:2, date:'Mar 3', title:'What Is UGC?', format:'Talking Head + B-Roll', time:'12:30 PM' },
+    { day:3, date:'Mar 4', title:'My Setup (BTS)', format:'BTS', time:'5:30 PM' },
+    { day:4, date:'Mar 5', title:'Spec Ad Demo', format:'Spec Ad', time:'12:30 PM' },
+    { day:5, date:'Mar 6', title:'Why Gen X Creators Are in Demand', format:'Talking Head + Data', time:'5:30 PM' },
+    { day:6, date:'Mar 7', title:'5 UGC Video Types', format:'Carousel', time:'10:00 AM' },
+    { day:7, date:'Mar 8', title:'Why I Started', format:'Personal Story', time:'7:00 PM' },
+    { day:8, date:'Mar 9', title:'How I Got My First Brand Deal', format:'Talking Head', time:'5:30 PM' },
+    { day:9, date:'Mar 10', title:'Spec Ad #2 — Tech/App', format:'Spec Ad', time:'12:30 PM' },
+    { day:10, date:'Mar 11', title:'3 Mistakes New Creators Make', format:'Talking Head', time:'5:30 PM' },
+    { day:11, date:'Mar 12', title:'Spec Ad #3 — Grooming', format:'Spec Ad', time:'12:30 PM' },
+    { day:12, date:'Mar 13', title:'Pitch Framework', format:'Talking Head', time:'5:30 PM' },
+    { day:13, date:'Mar 14', title:'UGC Rate Card 2026', format:'Carousel', time:'10:00 AM' },
+    { day:14, date:'Mar 15', title:'Week 2 Results', format:'Transparency', time:'7:00 PM' },
+    { day:15, date:'Mar 16', title:'6 Industries Need Gen X', format:'Talking Head', time:'5:30 PM' },
+    { day:16, date:'Mar 17', title:'Spec Ad #4 — Finance', format:'Spec Ad', time:'12:30 PM' },
+    { day:17, date:'Mar 18', title:'Film in 15 Minutes', format:'BTS', time:'5:30 PM' },
+    { day:18, date:'Mar 19', title:'Client Testimonial', format:'Talking Head', time:'12:30 PM' },
+    { day:19, date:'Mar 20', title:'What Brands Look For', format:'Talking Head', time:'5:30 PM' },
+    { day:20, date:'Mar 21', title:'My UGC Toolkit', format:'Carousel', time:'10:00 AM' },
+    { day:21, date:'Mar 22', title:'Corporate Exit Plan', format:'Personal Story', time:'7:00 PM' },
+    { day:22, date:'Mar 23', title:'Agency Model', format:'Talking Head', time:'5:30 PM' },
+    { day:23, date:'Mar 24', title:'Spec Ad #5 — Home Tech', format:'Spec Ad', time:'12:30 PM' },
+    { day:24, date:'Mar 25', title:'Algorithm vs Age', format:'Talking Head', time:'5:30 PM' },
+    { day:25, date:'Mar 26', title:'Day in My Life', format:'DITL', time:'12:30 PM' },
+    { day:26, date:'Mar 27', title:'Month 1 Revenue', format:'Transparency', time:'5:30 PM' },
+    { day:27, date:'Mar 28', title:'$0 to $5K Roadmap', format:'Carousel', time:'10:00 AM' },
+    { day:28, date:'Mar 29', title:'Building at 51', format:'Personal Story', time:'7:00 PM' },
+    { day:29, date:'Mar 30', title:'Month 2 Preview', format:'Talking Head', time:'5:30 PM' },
+    { day:30, date:'Mar 31', title:'30-Day Recap', format:'Highlight Reel', time:'5:30 PM' },
+  ];
+
+  const currentDay = u.contentDay || 0;
+  const rateCard = [
+    { tier: 'Single Video', price: '$400', range: '$350–$500', desc: 'One deliverable, one concept' },
+    { tier: 'Bundle (3)', price: '$1,000', range: '$900–$1,200', desc: 'Multiple hooks/angles, A/B testing' },
+    { tier: 'Retainer /mo', price: '$1,800', range: '$1,500–$2,000', desc: '4-8 videos/month + priority' },
+    { tier: 'Usage Rights', price: '+$150/mo', range: '+$100–$200', desc: 'Per platform, paid ads' },
+  ];
+
+  return `<div class="pane">
+    <div class="section-title" style="font-size:1.3rem">🎬 UGC Command Center — AnilCreates</div>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:1.5rem">Positioning: <strong style="color:var(--text)">"The bridge to America's wealthiest, most ignored generation"</strong> · Gen X = 31% of retail · 5% of creator budgets · $15.2T opportunity</div>
+
+    <!-- Revenue & Deals -->
+    <div class="grid-4">
+      <div class="card" ondblclick="editUGC('revenueThisMonth')"><h3>UGC Revenue (Mar)</h3><div class="big" style="color:var(--ok)">$${u.revenueThisMonth.toLocaleString()}</div><div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">Goal: $2,000</div></div>
+      <div class="card" ondblclick="editUGC('dealsThisMonth')"><h3>Deals Closed (Mar)</h3><div class="big">${u.dealsThisMonth}</div><div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">Target: 5+</div></div>
+      <div class="card" ondblclick="editUGC('retainers')"><h3>Active Retainers</h3><div class="big" style="color:var(--gold)">${u.retainers}</div><div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">Target: 3 by June</div></div>
+      <div class="card" ondblclick="editUGC('igFollowers')"><h3>IG Followers</h3><div class="big">${u.igFollowers.toLocaleString()}</div><div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">AnilCreates</div></div>
+    </div>
+
+    <!-- Daily Outreach Tracker -->
+    <div class="section-title" style="margin-top:2rem">Daily Outreach — ${totalToday}/${totalTarget} touches today</div>
+    <div class="progress-bar" style="margin-bottom:1rem"><div class="progress-fill" style="width:${Math.min(100,(totalToday/totalTarget)*100)}%"></div></div>
+    <div class="grid-${dailyTargets.length}" style="display:grid;grid-template-columns:repeat(5,1fr);gap:.8rem">
+      ${dailyTargets.map(d => `
+        <div class="card" style="text-align:center;cursor:pointer" ondblclick="editUGC('${d.key}')">
+          <h3>${d.label}</h3>
+          <div class="big" style="color:${d.color}">${u[d.key]}</div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:.3rem">Target: ${d.target}/day</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(u[d.key]/d.target)*100)}%;background:${d.color}"></div></div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Rate Card -->
+    <div class="section-title" style="margin-top:2rem">Rate Card (2026)</div>
+    <div class="grid-4">
+      ${rateCard.map(r => `
+        <div class="card">
+          <h3>${r.tier}</h3>
+          <div class="big" style="font-size:1.5rem;color:var(--ok)">${r.price}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">${r.range}</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-top:.5rem">${r.desc}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- $10K Math -->
+    <div class="section-title" style="margin-top:2rem">Path to $10K/Month (by June)</div>
+    <div class="card" style="padding:1.5rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+        <div>
+          <h3 style="margin-bottom:.8rem">Path A — Volume</h3>
+          <div style="font-size:.85rem;color:var(--muted);line-height:1.7">
+            20 videos/month × $500 = <strong style="color:var(--ok)">$10,000</strong><br>
+            Requires steady deal flow + marketplace presence
+          </div>
+        </div>
+        <div>
+          <h3 style="margin-bottom:.8rem">Path B — Retainer-Heavy ⭐</h3>
+          <div style="font-size:.85rem;color:var(--muted);line-height:1.7">
+            3 retainers × $1,800 = $5,400<br>
+            + 5 one-offs × $500 = $2,500<br>
+            + usage rights = $1,000+<br>
+            = <strong style="color:var(--ok)">~$9,000–$10,000</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 30-Day Content Calendar -->
+    <div class="section-title" style="margin-top:2rem">Instagram Content Calendar (Mar 2–31) — Day ${currentDay}/30
+      <button class="btn btn-small" style="margin-left:auto;font-size:.7rem;padding:.3rem .8rem;background:rgba(46,134,255,.15);color:var(--accent);border:1px solid rgba(46,134,255,.3);border-radius:6px;cursor:pointer" ondblclick="editUGC('contentDay')">Update Day</button>
+    </div>
+    <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+      <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+        <thead><tr style="background:rgba(255,255,255,.03);position:sticky;top:0">
+          <th style="padding:.5rem;text-align:left;color:var(--muted);font-size:.7rem">DAY</th>
+          <th style="padding:.5rem;text-align:left;color:var(--muted);font-size:.7rem">DATE</th>
+          <th style="padding:.5rem;text-align:left;color:var(--muted);font-size:.7rem">TITLE</th>
+          <th style="padding:.5rem;text-align:left;color:var(--muted);font-size:.7rem">FORMAT</th>
+          <th style="padding:.5rem;text-align:left;color:var(--muted);font-size:.7rem">TIME</th>
+        </tr></thead>
+        <tbody>
+          ${contentCalendar.map(c => {
+            const isCurrent = c.day === currentDay;
+            const isDone = c.day < currentDay;
+            const style = isCurrent ? 'background:rgba(201,168,76,.12);color:var(--gold)' : isDone ? 'color:var(--muted);text-decoration:line-through' : '';
+            return `<tr style="${style};border-bottom:1px solid var(--border)">
+              <td style="padding:.4rem .5rem;font-weight:700">${isCurrent?'▶ ':''}${c.day}</td>
+              <td style="padding:.4rem .5rem">${c.date}</td>
+              <td style="padding:.4rem .5rem;font-weight:${isCurrent?'700':'400'}">${c.title}</td>
+              <td style="padding:.4rem .5rem"><span class="badge ${c.format.includes('Spec')?'badge-gold':c.format.includes('Carousel')?'badge-accent':c.format.includes('Personal')||c.format.includes('Transparency')?'badge-warn':'badge-ok'}" style="font-size:.65rem">${c.format}</span></td>
+              <td style="padding:.4rem .5rem">${c.time}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Outreach Sequences -->
+    <div class="section-title" style="margin-top:2rem">Active Outreach Sequences</div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>LinkedIn — Brand Direct (Lemlist)</h3>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.7">5 steps: Connect → Data msg → Loom follow-up → Free test offer → Breakup<br>Lead with: "31% spending, 5% budgets" stat</div>
+        <div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div>
+      </div>
+      <div class="card">
+        <h3>LinkedIn — Agencies (Lemlist)</h3>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.7">4 steps: Connect → Gen X gap → Free test for client → Breakup<br>Pitch retainer model: 4+ videos/month</div>
+        <div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div>
+      </div>
+      <div class="card">
+        <h3>Email — Brand Direct (Apollo/Bento)</h3>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.7">5 emails over 18 days: Data intro → Loom → Social proof → Free test → Breakup</div>
+        <div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div>
+      </div>
+      <div class="card">
+        <h3>Email — Agencies (Apollo)</h3>
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.7">4 emails over 15 days: The gap → The proof → Retainer angle → Breakup</div>
+        <div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div>
+      </div>
+    </div>
+
+    <!-- Key Niches -->
+    <div class="section-title" style="margin-top:2rem">Target Niches by Priority</div>
+    <div class="grid-3">
+      <div class="card"><h3 style="color:var(--ok)">Tier 1 — Highest Value</h3><div style="font-size:.85rem;color:var(--muted);line-height:1.8">Fintech & Banking Apps<br>Health & Wellness Tech<br>Insurance / Financial Services</div></div>
+      <div class="card"><h3 style="color:var(--warn)">Tier 2 — Strong Fit</h3><div style="font-size:.85rem;color:var(--muted);line-height:1.8">Home Technology<br>Automotive<br>Pet Care / Premium Consumer</div></div>
+      <div class="card"><h3 style="color:var(--accent)">Tier 3 — Volume</h3><div style="font-size:.85rem;color:var(--muted);line-height:1.8">Grooming / Personal Care<br>Travel / Hospitality<br>Food & Beverage</div></div>
+    </div>
+
+    <div style="margin-top:1.5rem;font-size:.75rem;color:var(--muted)">Double-click any metric card to update its value. Full scripts in <strong>UGC_30Day_Content_Calendar.docx</strong></div>
+  </div>`;
+}
+
+function editUGC(field) {
+  const val = prompt('Update ' + field + ':', S.ugc[field]);
+  if (val !== null && !isNaN(val)) { S.ugc[field] = parseInt(val); saveAll(); renderPane(); }
+}
+
 // ── PROJECTS ──
 function renderProjects() {
   const cols = { backlog: 'Backlog', progress: 'In Progress', done: 'Done' };
@@ -964,6 +1445,12 @@ function renderFiles() {
       { name: 'Strategic Timing ($497)', file: 'sales_page_strategic_timing.html', type: 'html', desc: 'Personal timing reading' },
       { name: 'Annual Forecast ($997)', file: 'sales_page_annual_forecast.html', type: 'html', desc: 'Full year forecast package' },
       { name: 'Readings Hub Page', file: 'readings_page_PASTE_THIS.html', type: 'html', desc: 'Hub page linking all readings' },
+    ],
+    'UGC Business': [
+      { name: 'UGC Intelligence Report', file: 'UGC_Intelligence_Report.docx', type: 'doc', desc: 'Gen X Creator Advantage market research + data' },
+      { name: 'UGC Business Overhaul Plan', file: 'UGC_Business_Overhaul_Master_Plan.docx', type: 'doc', desc: '8-part plan: positioning, rates, $10K math, execution' },
+      { name: 'UGC 30-Day Content Calendar', file: 'UGC_30Day_Content_Calendar.docx', type: 'doc', desc: 'Full scripts/hooks/captions for 30 days (Mar 2-31)' },
+      { name: 'UGC Outreach Sequences', file: 'UGC_Outreach_Sequences.docx', type: 'doc', desc: '5 sequences: Lemlist, Apollo, LinkedIn organic' },
     ],
     'Content & Scripts': [
       { name: 'Daily Script Prompt (Universal)', file: 'daily_script_prompt.md', type: 'txt', desc: 'Paste into any AI for daily numerology script' },
