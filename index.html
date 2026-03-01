@@ -11,6 +11,7 @@
 --bg:#050508;--surface:#0a0a10;--text:#f5f7ff;--muted:#a7adbe;
 --accent:#2E86FF;--accent2:#0AF;--card:rgba(255,255,255,.04);
 --border:rgba(255,255,255,.06);--ok:#3ed598;--warn:#ffb648;--danger:#ff5d73;
+--gold:#C9A84C;
 --r:14px;--font:'Inter',system-ui,sans-serif;
 }
 html{scroll-behavior:smooth}
@@ -34,6 +35,8 @@ display:flex;align-items:center;gap:.4rem}
 .tab.active{color:#fff;background:rgba(46,134,255,.28);border-color:rgba(46,134,255,.3)}
 .tab-icon{font-size:.9rem;opacity:.7;line-height:1}
 .tab.active .tab-icon{opacity:1}
+.tab.today-tab{color:var(--gold)}
+.tab.today-tab.active{color:#fff;background:rgba(201,168,76,.28);border-color:rgba(201,168,76,.3)}
 
 /* status dot */
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.6s infinite;margin-left:auto;flex-shrink:0}
@@ -61,6 +64,7 @@ border:1px solid var(--border);border-radius:var(--r);padding:1.2rem;transition:
 /* section titles */
 .section-title{font-size:1.1rem;font-weight:700;margin:2rem 0 1rem;display:flex;align-items:center;gap:.5rem}
 .section-title::before{content:'';width:3px;height:18px;background:var(--accent);border-radius:2px}
+.section-title.gold::before{background:var(--gold)}
 
 /* badges */
 .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase}
@@ -68,6 +72,7 @@ border:1px solid var(--border);border-radius:var(--r);padding:1.2rem;transition:
 .badge-warn{background:rgba(255,182,72,.15);color:var(--warn)}
 .badge-danger{background:rgba(255,93,115,.15);color:var(--danger)}
 .badge-accent{background:rgba(46,134,255,.15);color:var(--accent)}
+.badge-gold{background:rgba(201,168,76,.15);color:var(--gold)}
 
 /* progress bar */
 .progress-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:.5rem}
@@ -113,6 +118,8 @@ font-size:.8rem;cursor:pointer;transition:all .2s}
 .btn-ghost:hover{border-color:var(--accent);color:var(--text)}
 .btn-danger{background:rgba(255,93,115,.15);color:var(--danger)}
 .btn-danger:hover{background:rgba(255,93,115,.3)}
+.btn-gold{background:var(--gold);color:#0D0D14}
+.btn-gold:hover{background:#d4b45c}
 
 /* revenue chart */
 .chart-container{position:relative;height:240px;margin-top:1rem}
@@ -175,6 +182,26 @@ font-size:1.1rem;font-weight:800;flex-shrink:0}
 padding-bottom:.5rem;border-bottom:1px solid var(--border)}
 .file-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
 
+/* ── TODAY TAB STYLES ── */
+.script-card{background:linear-gradient(180deg,rgba(15,15,22,.98),rgba(10,10,16,.95));
+border:1px solid rgba(201,168,76,.2);border-radius:var(--r);padding:1.5rem;margin-bottom:1.5rem}
+.script-card h3{color:var(--gold);font-size:1rem;margin-bottom:.3rem;text-transform:none;letter-spacing:0}
+.script-card .script-meta{font-size:.75rem;color:var(--muted);margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap}
+.script-card .script-meta span{display:inline-flex;align-items:center;gap:.3rem}
+.script-body{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:1.2rem;
+font-size:.9rem;line-height:1.8;color:#ddd;white-space:pre-wrap;font-family:var(--font)}
+.script-body .label{color:var(--gold);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.3px}
+.caption-box{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:1rem;
+margin-top:1rem;font-size:.85rem;line-height:1.7;color:#bbb}
+.caption-box strong{color:var(--text)}
+.hashtag-row{margin-top:.6rem;font-size:.8rem;color:var(--muted)}
+.copy-btn{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3);
+border-radius:8px;padding:.4rem 1rem;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.copy-btn:hover{background:rgba(201,168,76,.3)}
+.task-section{margin-bottom:1.5rem}
+.task-section h4{font-size:.85rem;color:var(--gold);font-weight:700;margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem}
+.task-section h4 .task-count{font-size:.7rem;color:var(--muted);font-weight:500}
+
 /* responsive */
 @media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr}.grid-1-2{grid-template-columns:1fr}}
 @media(max-width:768px){
@@ -205,12 +232,14 @@ padding-bottom:.5rem;border-bottom:1px solid var(--border)}
 // DATA LAYER — localStorage persistence
 // ═══════════════════════════════════════════
 const LS_KEY = 'ab_mc_';
-const DATA_VERSION = 'mar2026v2';
-// Clear old data if version mismatch (fresh month deploy)
-if (localStorage.getItem(LS_KEY + 'version') !== DATA_VERSION) {
+const DATA_VERSION = 'mar2026v3';
+// Migrate: keep data if only minor version bump
+const oldVersion = localStorage.getItem(LS_KEY + 'version');
+if (oldVersion !== DATA_VERSION && !oldVersion?.startsWith('mar2026')) {
   Object.keys(localStorage).filter(k => k.startsWith(LS_KEY)).forEach(k => localStorage.removeItem(k));
-  localStorage.setItem(LS_KEY + 'version', DATA_VERSION);
 }
+localStorage.setItem(LS_KEY + 'version', DATA_VERSION);
+
 function load(k, def) { try { const v = localStorage.getItem(LS_KEY + k); return v ? JSON.parse(v) : def; } catch { return def; } }
 function save(k, v) { localStorage.setItem(LS_KEY + k, JSON.stringify(v)); }
 
@@ -222,15 +251,13 @@ const S = {
   bigGoalDate: load('bigGoalDate', '2026-07-01'),
   priorities: load('priorities', [
     { text: 'Record daily numerology video', done: false },
-    { text: 'Create UGC video', done: false },
+    { text: 'Record GV Day 1 video — The Mask', done: false },
+    { text: 'Paste updated GV page into WordPress', done: false },
     { text: 'Send 20 brand outreach emails (Bento)', done: false },
-    { text: 'Send brand requests (Backstage)', done: false },
-    { text: 'Reply to comments on energy video', done: false },
-    { text: 'Follow up warm leads from Feb launch', done: false },
-    { text: 'Post "Comment your birthday" CTA', done: false },
+    { text: 'Reply to comments + DM mask emoji people', done: false },
   ]),
   activity: load('activity', [
-    { time: '2026-03-01 00:00', text: 'March begins — $2K target this month. Let\'s go.' },
+    { time: '2026-03-01 00:00', text: 'March begins — $2K target. GV launch Day 1 of 14.' },
   ]),
   clients: load('clients', [
     { name: 'Dermawell', value: 175, status: 'active', type: 'UGC', date: '2026-02-25' },
@@ -252,43 +279,45 @@ const S = {
     { month: 'Feb', amount: 920 },
     { month: 'Mar', amount: 0 },
   ]),
-  dailyOps: load('dailyOps', {
-    'Spiritual Tech': [
-      { text: 'Record daily numerology video', done: false },
-      { text: 'Post to TikTok, IG, YT, FB', done: false },
-      { text: 'Reply to video comments', done: false },
-      { text: 'Follow up warm reading leads', done: false },
+  todayTasks: load('todayTasks', {
+    'Morning — Content': [
+      { text: 'Record daily numerology video (script below)', done: false },
+      { text: 'Post numerology video to TikTok, IG, YT, FB', done: false },
+      { text: 'Record GV Day 1 — "The Mask" (script below)', done: false },
+      { text: 'Post GV video to TikTok, IG, YT, FB', done: false },
     ],
-    'UGC Creator': [
-      { text: 'Create UGC video for brand', done: false },
+    'Morning — Outreach': [
       { text: 'Send 20 outreach emails (Bento)', done: false },
       { text: 'Send brand requests (Backstage)', done: false },
-      { text: 'Check Lemlist sequence status', done: false },
+      { text: 'Create UGC video for brand deal', done: false },
     ],
-    'Presidio': [
-      { text: 'Check Slack / email', done: false },
-      { text: 'Client follow-ups', done: false },
+    'Admin — WordPress': [
+      { text: 'Paste updated GV page HTML into WordPress', done: false },
+      { text: 'Set up GHL automation (tag + auto-reply on form submit)', done: false },
     ],
-    "Gentleman's Vault": [
-      { text: 'Plan community structure', done: false },
-      { text: 'Draft founding member offer', done: false },
+    'Evening — Engagement': [
+      { text: 'Reply to ALL comments on numerology video', done: false },
+      { text: 'Reply to ALL comments on GV Mask video', done: false },
+      { text: 'Reply to birthday comments with quick number insights', done: false },
+      { text: 'DM anyone who drops 🎭 — "Felt that too. There\'s more coming."', done: false },
+      { text: 'Follow up warm leads from Feb launch', done: false },
     ],
   }),
+  dailyOps: load('dailyOps', {}),
   projects: load('projects', [
-    { title: 'Gentleman\'s Vault Launch', desc: 'Structure, pricing, content, delivery framework', priority: 'high', col: 'backlog', created: '2026-02-25' },
+    { title: "Gentleman's Vault Launch", desc: 'Business plan DONE. Sales page rebuilt. GHL form live. 14-day launch started. Doors open Mar 14.', priority: 'high', col: 'progress', created: '2026-02-25' },
     { title: 'Website Sales Pages', desc: '5 Blueprint Code reading pages — DONE', priority: 'medium', col: 'done', created: '2026-02-25' },
+    { title: 'Skool Community Setup', desc: 'Playbook done. Need to create Skool, set tiers, record welcome video + Course 1 Modules 1-2 by Mar 13', priority: 'high', col: 'progress', created: '2026-03-01' },
     { title: 'Apollo Lead Gen Setup', desc: 'Configure Apollo for UGC brand prospecting', priority: 'high', col: 'progress', created: '2026-02-25' },
-    { title: 'Lemlist Sequences', desc: 'LinkedIn outreach sequences for UGC brands', priority: 'medium', col: 'progress', created: '2026-02-25' },
-    { title: 'GHL Automations', desc: 'Reading purchase → delivery workflow', priority: 'high', col: 'backlog', created: '2026-02-25' },
     { title: 'CapGemini Follow-up', desc: 'Final interview done 2/24 — awaiting response', priority: 'medium', col: 'progress', created: '2026-02-24' },
   ]),
   timeline: load('timeline', [
-    { title: 'Phase 1 — Foundation', range: 'Feb 25 – Mar 10', desc: 'Daily content + 20 outreach/day + optimize funnel + close first 10 readings', milestones: ['Daily video habit locked in','20 outreach emails/day','5+ readings sold','First UGC deals closed'], current: true },
-    { title: 'Phase 2 — Momentum', range: 'Mar 11 – Apr 15', desc: 'Scale outreach to 50/day, launch birthday CTA funnel, hit $2K/mo', milestones: ['$2K/month revenue','10+ reading clients','5+ UGC brand deals','Birthday CTA converting'] },
-    { title: 'Phase 3 — Gentleman\'s Vault', range: 'Apr 16 – May 31', desc: 'Launch founding member cohort, set pricing, run first live sessions', milestones: ['Vault doors open','Founding members enrolled','First live group call','Recurring revenue started'] },
-    { title: 'Phase 4 — Scale', range: 'Jun 1 – Jul 31', desc: 'Hit $30K/month between readings + UGC + Vault memberships', milestones: ['$30K/month revenue','Presidio exit plan finalized','Vault growing organically','Multiple revenue streams flowing'] },
+    { title: 'Phase 1 — Foundation + GV Launch', range: 'Feb 25 – Mar 14', desc: 'Daily content + 20 outreach/day + 14-day GV launch campaign + open Vault doors', milestones: ['Daily video habit locked in','14-day GV content campaign','Vault doors open Mar 14','First founding members enrolled'], current: true },
+    { title: 'Phase 2 — Momentum', range: 'Mar 15 – Apr 15', desc: 'Scale outreach to 50/day, grow Vault membership, hit $2K/mo', milestones: ['$2K/month revenue','10+ reading clients','Vault growing weekly','5+ UGC brand deals'] },
+    { title: 'Phase 3 — Scale', range: 'Apr 16 – May 31', desc: 'Vault at capacity, multiple revenue streams, approach $10K/mo', milestones: ['Vault at founding capacity','Course content complete','$10K/month revenue','Referral engine working'] },
+    { title: 'Phase 4 — Freedom', range: 'Jun 1 – Jul 31', desc: 'Hit $30K/month between readings + UGC + Vault memberships', milestones: ['$30K/month revenue','Presidio exit plan finalized','Vault growing organically','Multiple revenue streams flowing'] },
   ]),
-  notes: load('notes', 'Mission Control Notes\n─────────────────\n\n• Blueprint Code™ framework is LIVE — all reading pages published\n• GG33 source PDFs can be deleted — all knowledge extracted\n• When client orders reading: provide name + DOB → Claude generates full framework\n• Mobile menu fix: WPCode Header injection (Astra theme override)\n• CapGemini final interview done 2/24 — waiting to hear back\n'),
+  notes: load('notes', 'Mission Control Notes\n─────────────────\n\n• Blueprint Code™ framework is LIVE — all reading pages published\n• GG33 source PDFs can be deleted — all knowledge extracted\n• When client orders reading: provide name + DOB → Claude generates full framework\n• Mobile menu fix: WPCode Header injection (Astra theme override)\n• CapGemini final interview done 2/24 — waiting to hear back\n• GV 14-day launch started Mar 1 — doors open Mar 14\n• Skool community playbook complete — need to set up platform by Mar 13\n• Record: Welcome video + Course 1 Modules 1-2 before Mar 14\n'),
   outreach: load('outreach', { sent: 0, replied: 0, booked: 0 }),
   social: load('social', { tiktok: 500, instagram: 300, youtube: 150, facebook: 50 }),
   ytd: load('ytd', { prevRev: 920, readingsSold: 5, readingsRev: 545, ugcRev: 375, outreachSent: 115, outreachReplied: 0 }),
@@ -299,30 +328,31 @@ function saveAll() {
   save('rev', S.rev); save('monthlyGoal', S.monthlyGoal); save('bigGoal', S.bigGoal);
   save('bigGoalDate', S.bigGoalDate); save('priorities', S.priorities); save('activity', S.activity);
   save('clients', S.clients); save('readings', S.readings); save('revMonths', S.revMonths);
-  save('dailyOps', S.dailyOps); save('projects', S.projects); save('timeline', S.timeline);
-  save('notes', S.notes); save('outreach', S.outreach); save('social', S.social); save('ytd', S.ytd);
+  save('todayTasks', S.todayTasks); save('dailyOps', S.dailyOps); save('projects', S.projects);
+  save('timeline', S.timeline); save('notes', S.notes); save('outreach', S.outreach);
+  save('social', S.social); save('ytd', S.ytd);
 }
 
 // ═══════════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════════
 const TABS = [
+  { name: 'Today', icon: '🎯', special: true },
   { name: 'Dashboard', icon: '⊞' },
   { name: 'Revenue', icon: '◎' },
   { name: 'Readings', icon: '✦' },
   { name: 'Outreach', icon: '↗' },
-  { name: 'Daily Ops', icon: '☰' },
   { name: 'Projects', icon: '▦' },
   { name: 'Timeline', icon: '◈' },
   { name: 'Files', icon: '◉' },
   { name: 'Notes', icon: '✎' },
 ];
-let activeTab = 'Dashboard';
+let activeTab = 'Today';
 
 function renderTabs() {
   const el = document.getElementById('tabs');
   el.innerHTML = TABS.map(t =>
-    `<div class="tab ${t.name===activeTab?'active':''}" onclick="switchTab('${t.name}')"><span class="tab-icon">${t.icon}</span>${t.name}</div>`
+    `<div class="tab ${t.name===activeTab?'active':''} ${t.special?'today-tab':''}" onclick="switchTab('${t.name}')"><span class="tab-icon">${t.icon}</span>${t.name}</div>`
   ).join('');
 }
 
@@ -360,33 +390,217 @@ function totalClientsRev() {
   return S.clients.reduce((s,c) => s + c.value, 0);
 }
 
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:2rem;right:2rem;background:var(--gold);color:#0D0D14;padding:.6rem 1.2rem;border-radius:8px;font-weight:600;font-size:.85rem;z-index:999;animation:up .3s ease';
+    toast.textContent = 'Copied!';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 1500);
+  });
+}
+
 // ═══════════════════════════════════════════
 // RENDER ENGINE
 // ═══════════════════════════════════════════
 function renderPane() {
   const m = document.getElementById('main');
   switch(activeTab) {
+    case 'Today': m.innerHTML = renderToday(); break;
     case 'Dashboard': m.innerHTML = renderDashboard(); break;
     case 'Revenue': m.innerHTML = renderRevenue(); afterRevenue(); break;
     case 'Readings': m.innerHTML = renderReadings(); break;
     case 'Outreach': m.innerHTML = renderOutreach(); break;
-    case 'Daily Ops': m.innerHTML = renderDailyOps(); break;
     case 'Projects': m.innerHTML = renderProjects(); break;
     case 'Timeline': m.innerHTML = renderTimeline(); break;
     case 'Files': m.innerHTML = renderFiles(); break;
     case 'Notes': m.innerHTML = renderNotes(); break;
   }
-  // reactivate pane
   document.querySelectorAll('.pane').forEach(p => p.classList.add('active'));
 }
 
-// ── DASHBOARD ──
+// ═══════════════════════════════════════════
+// TODAY TAB — Scripts + Tasks + Captions
+// ═══════════════════════════════════════════
+function renderToday() {
+  const dateStr = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const allTasks = Object.values(S.todayTasks).flat();
+  const doneCount = allTasks.filter(t=>t.done).length;
+  const totalCount = allTasks.length;
+  const gvDay = Math.max(1, Math.ceil((new Date() - new Date('2026-03-01')) / 86400000 + 1));
+  const doorsIn = daysUntil('2026-03-14');
+
+  let html = `<div class="pane">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem">
+      <div>
+        <h2 style="font-size:1.4rem;font-weight:800">${dateStr}</h2>
+        <div style="font-size:.85rem;color:var(--muted);margin-top:.2rem">GV Launch Day ${gvDay} of 14 · Doors open in ${doorsIn} days · ${doneCount}/${totalCount} tasks done</div>
+      </div>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-ghost btn-sm" onclick="resetTodayTasks()">↻ New Day</button>
+      </div>
+    </div>
+    <div class="progress-bar" style="margin-bottom:2rem"><div class="progress-fill" style="width:${pct(doneCount,totalCount)}%;background:linear-gradient(90deg,var(--gold),#e8c84c)"></div></div>`;
+
+  // ── SCRIPT 1: Daily Numerology ──
+  html += `
+    <div class="script-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
+        <div>
+          <h3>📹 Script 1 — Daily Numerology Video</h3>
+          <div class="script-meta">
+            <span>⚡ Main Energy: <strong style="color:var(--gold)">5</strong></span>
+            <span>🔮 Secondary: <strong style="color:var(--gold)">1</strong></span>
+            <span>⏱️ 60-90 sec</span>
+            <span>📱 TikTok, IG, YT, FB</span>
+          </div>
+        </div>
+        <button class="copy-btn" onclick="copyText(document.getElementById('script1text').innerText)">📋 Copy Script</button>
+      </div>
+      <div class="script-body" id="script1text"><span class="label">HOOK (3 sec):</span>
+"If you feel restless today — good. That's on purpose."
+
+<span class="label">BODY (45-60 sec):</span>
+"March first. New month. And the energy today is a 5 with a secondary 1. That's one of the most electric combinations in the Blueprint Code.
+
+5 energy is movement. Change. Freedom. That itch you're feeling right now? The one that says 'something needs to shift'? That's not anxiety. That's the 5 telling you — MOVE.
+
+But here's what makes today different. The secondary energy is a 1. And 1 is leadership. New beginnings. You're not just moving — you're starting something.
+
+So if you've been sitting on an idea, a conversation, a decision — today is the day. The 5 gives you the courage to break the pattern. The 1 says you don't need anyone's permission to go first.
+
+The only trap today? Overthinking it. 5 energy moves FAST. If you try to plan every step before you take the first one, you'll freeze. Don't let the mind talk you out of what the gut already knows."
+
+<span class="label">REAL TALK (15 sec):</span>
+"Most people wait for January to start over. But the numbers don't care about the calendar. TODAY is your reset. The code says move — so move."
+
+<span class="label">CTA (5 sec):</span>
+"Comment your birthday below and I'll tell you what today means for YOUR numbers. Full breakdown — link in bio."</div>
+
+      <div class="caption-box">
+        <strong>Caption:</strong><br><br>
+March 1st energy: 5 with a secondary 1.<br><br>
+Translation? MOVE. START. LEAD.<br><br>
+That restless feeling isn't anxiety. It's the code telling you to stop planning and start doing.<br><br>
+5 breaks the pattern. 1 says go first.<br><br>
+👇 Drop your birthday — I'll tell you what today means for YOUR numbers.
+      </div>
+      <div class="hashtag-row">#numerology #blueprintcode #spiritualawakening #march2026 #lifepath</div>
+    </div>`;
+
+  // ── SCRIPT 2: GV Day 1 — The Mask ──
+  html += `
+    <div class="script-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
+        <div>
+          <h3>📹 Script 2 — GV Day 1: "The Mask"</h3>
+          <div class="script-meta">
+            <span>🎭 Wound: Emptiness / Inauthenticity</span>
+            <span>⏱️ 60-75 sec</span>
+            <span>📱 TikTok, IG, YT, FB</span>
+            <span class="badge badge-gold">GV LAUNCH</span>
+          </div>
+        </div>
+        <button class="copy-btn" onclick="copyText(document.getElementById('script2text').innerText)">📋 Copy Script</button>
+      </div>
+      <div class="script-body" id="script2text"><span class="label">HOOK (3 sec):</span>
+"When someone asks how you're doing... do you ever tell the truth?"
+
+<span class="label">BODY (50-60 sec):</span>
+"You say 'I'm good.' Every single time. Because what else are you gonna say?
+
+'I feel empty and I don't know why'?
+'I have everything I worked for and none of it hits anymore'?
+
+Nah. So you smile. You perform. You keep it moving.
+
+You got the career. The house. The family. Check, check, check. And at 2am when it's quiet and nobody needs anything from you — there's that voice. The one that whispers... 'is this really it?'
+
+I wore that mask for twenty years. 'I'm good, bro. I'm great.' Meanwhile I was destroying myself. Drinking every night. Numbing. Because the mask kept everyone comfortable — except me.
+
+It didn't crack until my body gave out. Pancreatitis. Diabetes. Lost hearing in my right ear. My body was SCREAMING what my mouth wouldn't say.
+
+The mask doesn't protect you, brother. It imprisons you."
+
+<span class="label">CTA (10 sec):</span>
+"If this hit different — drop a 🎭 in the comments. And if you want to know what's REALLY driving you under that mask, comment your birthday. I'll tell you something about yourself nobody's ever told you."</div>
+
+      <div class="caption-box">
+        <strong>Caption:</strong><br><br>
+You say "I'm good" because the truth is too heavy to hand to anyone.<br><br>
+But that weight doesn't disappear. It shows up in your body. Your sleep. Your drinking. Your marriage.<br><br>
+I wore the mask for 20 years. Pancreatitis. Diabetes. Lost hearing in one ear. My body screamed what my mouth wouldn't say.<br><br>
+The mask doesn't protect you. It imprisons you.<br><br>
+🎭 Drop a 🎭 if this is you.<br>
+👇 Comment your birthday — I'll tell you something about yourself no one's ever told you.
+      </div>
+      <div class="hashtag-row">#mentalhealth #masculinity #healingjourney #emotionalhealing #blueprintcode</div>
+    </div>`;
+
+  // ── TODAY'S TASKS ──
+  html += `<div class="section-title gold">Today's Tasks</div>`;
+  const sections = Object.entries(S.todayTasks);
+  html += `<div class="grid-2">`;
+  sections.forEach(([name, items]) => {
+    const done = items.filter(t=>t.done).length;
+    const total = items.length;
+    html += `<div class="card">
+      <div class="task-section">
+        <h4>${name} <span class="task-count">${done}/${total}</span></h4>
+        <div class="progress-bar" style="margin-bottom:.6rem"><div class="progress-fill" style="width:${pct(done,total)}%;background:var(--gold)"></div></div>
+        ${items.map((t,i) => `
+          <div class="check-item ${t.done?'done':''}">
+            <input type="checkbox" ${t.done?'checked':''} onchange="toggleTodayTask('${name.replace(/'/g,"\\'")}',${i})">
+            <span>${t.text}</span>
+          </div>
+        `).join('')}
+        <div class="add-row">
+          <input class="inp" id="today_${name.replace(/[^a-z]/gi,'')}" placeholder="Add task..." onkeydown="if(event.key==='Enter')addTodayTask('${name.replace(/'/g,"\\'")}')">
+          <button class="btn btn-primary btn-sm" onclick="addTodayTask('${name.replace(/'/g,"\\'")}')">+</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // ── TOMORROW PREVIEW ──
+  html += `
+    <div style="margin-top:2rem;padding:1.2rem;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:var(--r)">
+      <div style="font-size:.85rem;color:var(--gold);font-weight:700;margin-bottom:.3rem">📅 Tomorrow — GV Day 2: "The Father Wound"</div>
+      <div style="font-size:.85rem;color:var(--muted)">Hook: "The way your father treated you is why you treat yourself the way you do." — Full script ready in the content calendar.</div>
+    </div>`;
+
+  html += `</div>`;
+  return html;
+}
+
+function toggleTodayTask(section, i) {
+  S.todayTasks[section][i].done = !S.todayTasks[section][i].done;
+  if (S.todayTasks[section][i].done) addActivity(`Done: ${S.todayTasks[section][i].text}`);
+  saveAll(); renderPane();
+}
+
+function addTodayTask(section) {
+  const inp = document.getElementById('today_' + section.replace(/[^a-z]/gi,''));
+  if (inp && inp.value.trim()) { S.todayTasks[section].push({ text: inp.value.trim(), done: false }); saveAll(); renderPane(); }
+}
+
+function resetTodayTasks() {
+  if (confirm('Reset all tasks for a new day? (Unchecks everything)')) {
+    Object.values(S.todayTasks).forEach(items => items.forEach(t => t.done = false));
+    saveAll(); renderPane();
+  }
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════
 function renderDashboard() {
   const totalRev = S.rev;
   const goalPct = pct(totalRev, S.monthlyGoal);
   const activePrj = S.projects.filter(p => p.col !== 'done').length;
-  const todayTasks = Object.values(S.dailyOps).flat();
-  const doneTasks = todayTasks.filter(t => t.done).length;
+  const allTasks = Object.values(S.todayTasks).flat();
+  const doneTasks = allTasks.filter(t => t.done).length;
   const daysLeft = daysUntil(S.bigGoalDate);
 
   return `<div class="pane">
@@ -404,13 +618,13 @@ function renderDashboard() {
       </div>
       <div class="card">
         <h3>Today's Tasks</h3>
-        <div class="big">${doneTasks}/${todayTasks.length}</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct(doneTasks,todayTasks.length)}%"></div></div>
+        <div class="big">${doneTasks}/${allTasks.length}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct(doneTasks,allTasks.length)}%"></div></div>
       </div>
       <div class="card">
-        <h3>Days to $30K Goal</h3>
-        <div class="big" style="color:var(--warn)">${daysLeft}</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">Target: July 2026</div>
+        <h3>GV Doors Open In</h3>
+        <div class="big" style="color:var(--gold)">${daysUntil('2026-03-14')}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">March 14, 2026</div>
       </div>
     </div>
 
@@ -449,22 +663,19 @@ function renderDashboard() {
         <h3>YTD Readings Sold</h3>
         <div class="big">${S.readings.reduce((s,r)=>s+r.sold,0) + (S.ytd?.readingsSold || 0)}</div>
         <div style="font-size:.75rem;color:var(--ok)">${money(totalReadingsRev() + (S.ytd?.readingsRev || 0))} revenue</div>
-        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">This month: ${S.readings.reduce((s,r)=>s+r.sold,0)} sold / ${money(totalReadingsRev())}</div>
       </div>
       <div class="card">
         <h3>YTD Total Revenue</h3>
         <div class="big" style="color:var(--ok)">${money(S.rev + (S.ytd?.prevRev || 0))}</div>
-        <div style="font-size:.75rem;color:var(--muted)">${money(S.ytd?.prevRev || 0)} prior months + ${money(S.rev)} this month</div>
-        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">UGC: ${money(totalClientsRev())} | Readings: ${money(totalReadingsRev())}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${money(S.ytd?.prevRev || 0)} prior + ${money(S.rev)} this month</div>
       </div>
       <div class="card">
         <h3>YTD Outreach Sent</h3>
         <div class="big">${S.outreach.sent + (S.ytd?.outreachSent || 0)}</div>
         <div style="font-size:.75rem;color:var(--muted)">${S.outreach.replied + (S.ytd?.outreachReplied || 0)} total replies</div>
-        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">This month: ${S.outreach.sent} sent / ${S.outreach.replied} replies</div>
       </div>
       <div class="card" ondblclick="editFollowers()">
-        <h3>Followers by Platform</h3>
+        <h3>Followers</h3>
         <div class="big">${(S.social.tiktok+S.social.instagram+S.social.youtube+S.social.facebook).toLocaleString()}</div>
         <div style="font-size:.75rem;margin-top:.3rem;line-height:1.8">
           <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">TikTok</span><span style="font-weight:700">${S.social.tiktok.toLocaleString()}</span></div>
@@ -525,7 +736,6 @@ function renderRevenue() {
           <div style="display:flex;justify-content:space-between"><span>Current MRR</span><span style="font-weight:700">${money(S.rev)}</span></div>
           <div style="display:flex;justify-content:space-between"><span>Annual Run Rate</span><span style="font-weight:700">${money(S.rev*12)}</span></div>
           <div style="display:flex;justify-content:space-between"><span>Gap to $30K/mo</span><span style="font-weight:700;color:var(--danger)">${money(S.bigGoal - S.rev)}</span></div>
-          <div style="display:flex;justify-content:space-between"><span>Growth Needed</span><span style="font-weight:700;color:var(--warn)">${S.rev>0?Math.round(((S.bigGoal/S.rev)-1)*100):'∞'}x</span></div>
         </div>
       </div>
     </div>
@@ -573,9 +783,7 @@ function afterRevenue() {
   const barW = Math.min(50, (w - pad.l - pad.r) / data.length * 0.6);
   const gap = (w - pad.l - pad.r) / data.length;
 
-  // grid
-  ctx.strokeStyle = 'rgba(255,255,255,.06)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = pad.t + (h - pad.t - pad.b) * (1 - i/4);
     ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
@@ -583,14 +791,12 @@ function afterRevenue() {
     ctx.fillText(money(Math.round(maxVal * i/4)), 4, y + 4);
   }
 
-  // goal line
   const goalY = pad.t + (h - pad.t - pad.b) * (1 - S.monthlyGoal/maxVal);
   ctx.strokeStyle = 'rgba(46,134,255,.4)'; ctx.setLineDash([6,4]);
   ctx.beginPath(); ctx.moveTo(pad.l, goalY); ctx.lineTo(w - pad.r, goalY); ctx.stroke();
   ctx.setLineDash([]); ctx.fillStyle = '#2E86FF'; ctx.font = '10px Inter';
   ctx.fillText('Goal: ' + money(S.monthlyGoal), w - pad.r - 80, goalY - 6);
 
-  // bars
   data.forEach((d, i) => {
     const x = pad.l + gap * i + (gap - barW) / 2;
     const barH = (d.amount / maxVal) * (h - pad.t - pad.b);
@@ -599,7 +805,6 @@ function afterRevenue() {
     grad.addColorStop(0, '#2E86FF'); grad.addColorStop(1, '#4a8bff');
     ctx.fillStyle = grad;
     ctx.beginPath(); ctx.roundRect(x, y, barW, barH, [4,4,0,0]); ctx.fill();
-    // label
     ctx.fillStyle = '#a7adbe'; ctx.font = '11px Inter'; ctx.textAlign = 'center';
     ctx.fillText(d.month, x + barW/2, h - pad.b + 18);
     if (d.amount > 0) { ctx.fillStyle = '#f5f7ff'; ctx.font = '600 11px Inter'; ctx.fillText(money(d.amount), x + barW/2, y - 6); }
@@ -621,14 +826,8 @@ function renderReadings() {
             <span class="badge badge-accent">${money(r.price)}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:baseline">
-            <div>
-              <div class="big">${r.sold}</div>
-              <div style="font-size:.75rem;color:var(--muted)">sold</div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-size:1.3rem;font-weight:700;color:var(--ok)">${money(r.price * r.sold)}</div>
-              <div style="font-size:.75rem;color:var(--muted)">revenue</div>
-            </div>
+            <div><div class="big">${r.sold}</div><div style="font-size:.75rem;color:var(--muted)">sold</div></div>
+            <div style="text-align:right"><div style="font-size:1.3rem;font-weight:700;color:var(--ok)">${money(r.price * r.sold)}</div><div style="font-size:.75rem;color:var(--muted)">revenue</div></div>
           </div>
           <div style="margin-top:.8rem;display:flex;gap:.5rem">
             <button class="btn btn-primary btn-sm" onclick="addSale(${i})">+ Sale</button>
@@ -650,7 +849,6 @@ function renderReadings() {
       <div>Ancestral Pattern ($397) — <a href="https://api.spiritualtech.com/payment-link/69a330363413b535f8fb5e92" target="_blank">Payment Link</a> | <a href="https://www.anilgunjal.com/ancestral-pattern/" target="_blank">Sales Page</a></div>
       <div>Strategic Timing ($497) — <a href="https://api.spiritualtech.com/payment-link/69a3300e3413b566b6fb5e5b" target="_blank">Payment Link</a> | <a href="https://www.anilgunjal.com/strategic-timing/" target="_blank">Sales Page</a></div>
       <div>Annual Forecast ($997) — <a href="https://api.spiritualtech.com/payment-link/69a3304f84b2d7253c584842" target="_blank">Payment Link</a> | <a href="https://www.anilgunjal.com/annual-forecast/" target="_blank">Sales Page</a></div>
-      <div>Compatibility ($159) — <a href="https://api.spiritualtech.com/payment-link/698a9f4ce90aca50568dec80" target="_blank">Payment Link</a></div>
     </div>
   </div>`;
 }
@@ -666,10 +864,7 @@ function renderOutreach() {
       <div class="card" ondblclick="editOutreach('sent')"><h3>Emails Sent</h3><div class="big">${S.outreach.sent}</div></div>
       <div class="card" ondblclick="editOutreach('replied')"><h3>Replies</h3><div class="big" style="color:var(--warn)">${S.outreach.replied}</div></div>
       <div class="card" ondblclick="editOutreach('booked')"><h3>Calls Booked</h3><div class="big" style="color:var(--ok)">${S.outreach.booked}</div></div>
-      <div class="card">
-        <h3>Reply Rate</h3>
-        <div class="big">${S.outreach.sent>0?((S.outreach.replied/S.outreach.sent)*100).toFixed(1):'0'}%</div>
-      </div>
+      <div class="card"><h3>Reply Rate</h3><div class="big">${S.outreach.sent>0?((S.outreach.replied/S.outreach.sent)*100).toFixed(1):'0'}%</div></div>
     </div>
 
     <div class="section-title" style="margin-top:2rem">Social Media Followers</div>
@@ -684,23 +879,10 @@ function renderOutreach() {
 
     <div class="section-title" style="margin-top:2rem">Outreach Tools</div>
     <div class="grid-3">
-      <div class="card">
-        <h3>Bento</h3>
-        <div style="font-size:.85rem;color:var(--muted)">Email outreach to brands</div>
-        <div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div>
-      </div>
-      <div class="card">
-        <h3>Backstage</h3>
-        <div style="font-size:.85rem;color:var(--muted)">Brand request platform</div>
-        <div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div>
-      </div>
-      <div class="card">
-        <h3>Lemlist</h3>
-        <div style="font-size:.85rem;color:var(--muted)">LinkedIn outreach sequences</div>
-        <div style="margin-top:.5rem"><span class="badge badge-warn">Setting Up</span></div>
-      </div>
+      <div class="card"><h3>Bento</h3><div style="font-size:.85rem;color:var(--muted)">Email outreach to brands</div><div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div></div>
+      <div class="card"><h3>Backstage</h3><div style="font-size:.85rem;color:var(--muted)">Brand request platform</div><div style="margin-top:.5rem"><span class="badge badge-ok">Active</span></div></div>
+      <div class="card"><h3>Lemlist</h3><div style="font-size:.85rem;color:var(--muted)">LinkedIn outreach sequences</div><div style="margin-top:.5rem"><span class="badge badge-warn">Setting Up</span></div></div>
     </div>
-
     <div style="margin-top:1.5rem;font-size:.75rem;color:var(--muted)">Double-click any metric card to update its value.</div>
   </div>`;
 }
@@ -715,61 +897,6 @@ function editSocial(platform) {
   if (val !== null && !isNaN(val)) { S.social[platform] = parseInt(val); saveAll(); renderPane(); }
 }
 
-// ── DAILY OPS ──
-function renderDailyOps() {
-  const domains = Object.entries(S.dailyOps);
-  return `<div class="pane">
-    <div class="section-title">Daily Operations — ${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>
-    <div class="grid-2">
-      ${domains.map(([name, items]) => {
-        const done = items.filter(t=>t.done).length;
-        const total = items.length;
-        return `<div class="card">
-          <div class="domain-header">
-            <h3 style="margin:0">${name}</h3>
-            <span class="domain-count">${done}/${total} done</span>
-          </div>
-          <div class="progress-bar" style="margin-bottom:.8rem"><div class="progress-fill" style="width:${pct(done,total)}%"></div></div>
-          ${items.map((t,i) => `
-            <div class="check-item ${t.done?'done':''}">
-              <input type="checkbox" ${t.done?'checked':''} onchange="toggleOps('${name}',${i})">
-              <span>${t.text}</span>
-              <button class="btn btn-danger btn-sm" style="margin-left:auto;padding:2px 6px;font-size:.65rem" onclick="removeOps('${name}',${i})">×</button>
-            </div>
-          `).join('')}
-          <div class="add-row">
-            <input class="inp" id="ops_${name.replace(/[^a-z]/gi,'')}" placeholder="Add task..." onkeydown="if(event.key==='Enter')addOps('${name}')">
-            <button class="btn btn-primary btn-sm" onclick="addOps('${name}')">+</button>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-    <div style="margin-top:1rem;text-align:center">
-      <button class="btn btn-ghost" onclick="resetDailyOps()">Reset All Tasks (New Day)</button>
-    </div>
-  </div>`;
-}
-
-function toggleOps(domain, i) {
-  S.dailyOps[domain][i].done = !S.dailyOps[domain][i].done;
-  if (S.dailyOps[domain][i].done) addActivity(`Completed: ${S.dailyOps[domain][i].text}`);
-  saveAll(); renderPane();
-}
-
-function addOps(domain) {
-  const inp = document.getElementById('ops_' + domain.replace(/[^a-z]/gi,''));
-  if (inp && inp.value.trim()) { S.dailyOps[domain].push({ text: inp.value.trim(), done: false }); saveAll(); renderPane(); }
-}
-
-function removeOps(domain, i) { S.dailyOps[domain].splice(i, 1); saveAll(); renderPane(); }
-
-function resetDailyOps() {
-  if (confirm('Reset all daily tasks to unchecked?')) {
-    Object.values(S.dailyOps).forEach(items => items.forEach(t => t.done = false));
-    saveAll(); renderPane();
-  }
-}
-
 // ── PROJECTS ──
 function renderProjects() {
   const cols = { backlog: 'Backlog', progress: 'In Progress', done: 'Done' };
@@ -782,7 +909,7 @@ function renderProjects() {
             ${label}
             <span class="badge badge-accent">${S.projects.filter(p=>p.col===key).length}</span>
           </div>
-          ${S.projects.filter(p=>p.col===key).map((p,_,arr) => {
+          ${S.projects.filter(p=>p.col===key).map(p => {
             const idx = S.projects.indexOf(p);
             return `<div class="card" style="margin-bottom:.6rem;cursor:pointer" onclick="editProject(${idx})">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
@@ -790,7 +917,6 @@ function renderProjects() {
                 <span class="badge ${p.priority==='high'?'badge-danger':p.priority==='medium'?'badge-warn':'badge-ok'}">${p.priority}</span>
               </div>
               <div style="font-size:.8rem;color:var(--muted)">${p.desc}</div>
-              <div style="font-size:.7rem;color:var(--muted);margin-top:.3rem">${p.created}</div>
             </div>`;
           }).join('')}
         </div>
@@ -806,7 +932,7 @@ function renderTimeline() {
     <div class="section-title">Roadmap to Freedom</div>
     <div style="max-width:800px">
       <div class="timeline-line">
-        ${S.timeline.map((t,i) => `
+        ${S.timeline.map(t => `
           <div class="tl-item ${t.current?'current':''}">
             <div class="tl-dot"></div>
             <h4>${t.title}</h4>
@@ -822,56 +948,47 @@ function renderTimeline() {
   </div>`;
 }
 
-// ── NOTES ──
 // ── FILES ──
 function renderFiles() {
   const FILES = {
+    'Gentleman\'s Vault': [
+      { name: 'GV 14-Day Content Calendar', file: 'GV_14Day_Launch_Content_Calendar.docx', type: 'doc', desc: 'All 14 days of launch scripts, captions, hashtags' },
+      { name: 'GV Skool Community Playbook', file: 'GV_Skool_Community_Playbook.docx', type: 'doc', desc: 'Course rewrites, onboarding, call themes, recording plan' },
+      { name: 'GV Business Plan', file: 'Gentlemans_Vault_Business_Plan.docx', type: 'doc', desc: 'Full business plan with pricing, curriculum, launch schedule' },
+      { name: 'GV Sales Page (Paste)', file: 'gentlemens_vault_page_PASTE_THIS.html', type: 'html', desc: 'Updated symptom-first page — paste into WordPress' },
+    ],
     'Website — Sales Pages': [
       { name: 'Personal Blueprint ($97)', file: 'sales_page_personal_blueprint.html', type: 'html', desc: 'Entry-level Blueprint Code™ reading page' },
-      { name: 'Deep Dive Audio ($297)', file: 'sales_page_deep_dive_audio.html', type: 'html', desc: 'Premium audio reading with full breakdown' },
-      { name: 'Ancestral Pattern ($397)', file: 'sales_page_ancestral_pattern.html', type: 'html', desc: 'Generational pattern & lineage reading' },
-      { name: 'Strategic Timing ($497)', file: 'sales_page_strategic_timing.html', type: 'html', desc: 'Personal year/month cycle timing reading' },
-      { name: 'Annual Forecast ($997)', file: 'sales_page_annual_forecast.html', type: 'html', desc: 'Full year forecast package with quarterly deep dives' },
-      { name: 'Readings Hub Page', file: 'readings_page_PASTE_THIS.html', type: 'html', desc: 'Hub page linking to all reading offerings' },
+      { name: 'Deep Dive Audio ($297)', file: 'sales_page_deep_dive_audio.html', type: 'html', desc: 'Premium audio reading' },
+      { name: 'Ancestral Pattern ($397)', file: 'sales_page_ancestral_pattern.html', type: 'html', desc: 'Generational pattern reading' },
+      { name: 'Strategic Timing ($497)', file: 'sales_page_strategic_timing.html', type: 'html', desc: 'Personal timing reading' },
+      { name: 'Annual Forecast ($997)', file: 'sales_page_annual_forecast.html', type: 'html', desc: 'Full year forecast package' },
+      { name: 'Readings Hub Page', file: 'readings_page_PASTE_THIS.html', type: 'html', desc: 'Hub page linking all readings' },
     ],
-    'Website — Code to Paste': [
-      { name: 'Homepage HTML', file: 'homepage_code_PASTE_THIS.txt', type: 'txt', desc: 'Full homepage code with Blueprint Code™ branding & fixed Book Now links' },
-      { name: 'Mobile Menu Fix CSS', file: 'mobile_menu_fix_CSS.txt', type: 'css', desc: 'Astra theme mobile menu override — dark background fix' },
-      { name: 'Deep Dive Audio (Paste)', file: 'PASTE_1_deep_dive_audio.html', type: 'html', desc: 'WordPress-ready paste version' },
-      { name: 'Strategic Timing (Paste)', file: 'PASTE_2_strategic_timing.html', type: 'html', desc: 'WordPress-ready paste version' },
-      { name: 'Ancestral Pattern (Paste)', file: 'PASTE_3_ancestral_pattern.html', type: 'html', desc: 'WordPress-ready paste version' },
-      { name: 'Personal Blueprint (Paste)', file: 'PASTE_4_personal_blueprint.html', type: 'html', desc: 'WordPress-ready paste version' },
-      { name: 'Annual Forecast (Paste)', file: 'PASTE_5_annual_forecast.html', type: 'html', desc: 'WordPress-ready paste version' },
+    'Content & Scripts': [
+      { name: 'Daily Script Prompt (Universal)', file: 'daily_script_prompt.md', type: 'txt', desc: 'Paste into any AI for daily numerology script' },
+      { name: 'Email Announcement', file: 'email_new_readings_announcement.html', type: 'html', desc: 'Readings launch email + strategy' },
     ],
-    'Business Operations': [
-      { name: 'Website Update Checklist', file: 'Website_Master_Update_Checklist.xlsx', type: 'xlsx', desc: 'Master checklist for all website updates & status' },
-      { name: 'Mission Control Dashboard', file: 'mission_control.html', type: 'html', desc: 'This dashboard — your command center' },
+    'Graphics': [
+      { name: 'Facebook Feed Graphic', file: 'facebook_announcement.png', type: 'txt', desc: 'Readings announcement (1080x1080)' },
+      { name: 'Facebook Story Graphic', file: 'facebook_story_announcement.png', type: 'txt', desc: 'Readings story (1080x1920)' },
+    ],
+    'Operations': [
+      { name: 'Website Checklist', file: 'Website_Master_Update_Checklist.xlsx', type: 'xlsx', desc: 'Master checklist for all updates' },
+      { name: 'Homepage Code', file: 'homepage_code_PASTE_THIS.txt', type: 'txt', desc: 'Homepage HTML with Blueprint Code™ branding' },
     ],
     'Live Website Pages': [
-      { name: 'Homepage', url: 'https://www.anilgunjal.com/', type: 'link', desc: 'anilgunjal.com — Blueprint Code™ branded homepage' },
-      { name: 'Personal Blueprint', url: 'https://www.anilgunjal.com/personal-blueprint/', type: 'link', desc: '$97 reading sales page (LIVE)' },
-      { name: 'Deep Dive Audio', url: 'https://www.anilgunjal.com/deep-dive-audio/', type: 'link', desc: '$297 reading sales page (LIVE)' },
-      { name: 'Ancestral Pattern', url: 'https://www.anilgunjal.com/ancestral-pattern/', type: 'link', desc: '$397 reading sales page (LIVE)' },
-      { name: 'Strategic Timing', url: 'https://www.anilgunjal.com/strategic-timing/', type: 'link', desc: '$497 reading sales page (LIVE)' },
-      { name: 'Annual Forecast', url: 'https://www.anilgunjal.com/annual-forecast/', type: 'link', desc: '$997 reading sales page (LIVE)' },
-      { name: 'Readings Hub', url: 'https://www.anilgunjal.com/readings/', type: 'link', desc: 'All readings overview page (LIVE)' },
-      { name: "Gentleman's Vault", url: 'https://www.anilgunjal.com/gentlemens-vault/', type: 'link', desc: 'Interest list / waitlist page (LIVE)' },
-      { name: 'UGC Website', url: 'https://www.anilcreates.com/', type: 'link', desc: 'UGC creator business site' },
-    ],
-    'Payment Links (GHL)': [
-      { name: 'Personal Blueprint — $97', url: 'https://api.spiritualtech.com/payment-link/698a9f4ce90aca50568dec80', type: 'link', desc: 'Direct payment link' },
-      { name: 'Deep Dive Audio — $297', url: 'https://api.spiritualtech.com/payment-link/69a32fee3413b574b1fb5e4d', type: 'link', desc: 'Direct payment link' },
-      { name: 'Ancestral Pattern — $397', url: 'https://api.spiritualtech.com/payment-link/69a330363413b535f8fb5e92', type: 'link', desc: 'Direct payment link' },
-      { name: 'Strategic Timing — $497', url: 'https://api.spiritualtech.com/payment-link/69a3300e3413b566b6fb5e5b', type: 'link', desc: 'Direct payment link' },
-      { name: 'Annual Forecast — $997', url: 'https://api.spiritualtech.com/payment-link/69a3304f84b2d7253c584842', type: 'link', desc: 'Direct payment link' },
+      { name: 'Homepage', url: 'https://www.anilgunjal.com/', type: 'link', desc: 'anilgunjal.com' },
+      { name: "Gentleman's Vault", url: 'https://www.anilgunjal.com/gentlemens-vault/', type: 'link', desc: 'Interest list page' },
+      { name: 'Readings Hub', url: 'https://www.anilgunjal.com/readings/', type: 'link', desc: 'All readings' },
+      { name: 'UGC Website', url: 'https://www.anilcreates.com/', type: 'link', desc: 'anilcreates.com' },
     ],
   };
 
   const typeIcon = { html: 'HTML', xlsx: 'XLS', txt: 'TXT', css: 'CSS', doc: 'DOC', link: '🔗' };
   const typeClass = { html: 'html', xlsx: 'xlsx', txt: 'txt', css: 'css', doc: 'doc', link: 'link' };
 
-  let html = '<div class="pane"><div class="section-title">File Hub — Everything We\'ve Built</div>';
-
+  let html = '<div class="pane"><div class="section-title">File Hub</div>';
   for (const [section, files] of Object.entries(FILES)) {
     html += `<div class="file-section"><h3>${section}</h3><div class="file-grid">`;
     for (const f of files) {
@@ -880,20 +997,17 @@ function renderFiles() {
       const isLink = !!f.url;
       html += `<a class="file-card" href="${href}"${target}>
         <div class="file-icon ${typeClass[f.type]}">${typeIcon[f.type]}</div>
-        <div class="file-info">
-          <h4>${f.name}</h4>
-          <p>${f.desc}</p>
-        </div>
-        ${isLink ? '<span class="file-badge" style="background:rgba(46,134,255,.15);color:var(--accent)">Open ↗</span>' : '<span class="file-badge" style="background:rgba(62,213,152,.15);color:var(--ok)">Local File</span>'}
+        <div class="file-info"><h4>${f.name}</h4><p>${f.desc}</p></div>
+        ${isLink ? '<span class="file-badge" style="background:rgba(46,134,255,.15);color:var(--accent)">Open ↗</span>' : '<span class="file-badge" style="background:rgba(62,213,152,.15);color:var(--ok)">Local</span>'}
       </a>`;
     }
     html += '</div></div>';
   }
-
   html += '</div>';
   return html;
 }
 
+// ── NOTES ──
 function renderNotes() {
   return `<div class="pane">
     <div class="section-title">Notes</div>
@@ -1027,7 +1141,7 @@ function editFollowers() {
 function resetMonth() {
   openModal(`
     <h3>Reset for New Month</h3>
-    <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">This will archive current month's revenue into the chart, reset all counters to zero, and start fresh. This cannot be undone.</p>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">This will archive current month's revenue into the chart, reset all counters to zero, and start fresh.</p>
     <div class="field"><label>New Month Name (e.g. Apr)</label><input class="inp" id="newMonthName" placeholder="Apr"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1038,34 +1152,29 @@ function resetMonth() {
 
 function confirmResetMonth() {
   const newMonth = document.getElementById('newMonthName').value.trim() || 'New';
-  // roll current month into YTD
   S.ytd.prevRev += S.rev;
   S.ytd.readingsSold += S.readings.reduce((s,r) => s + r.sold, 0);
   S.ytd.readingsRev += totalReadingsRev();
   S.ytd.outreachSent += S.outreach.sent;
   S.ytd.outreachReplied += S.outreach.replied;
-  // archive current rev into chart
   const lastMonth = S.revMonths[S.revMonths.length - 1];
   if (lastMonth) lastMonth.amount = S.rev;
   S.revMonths.push({ month: newMonth, amount: 0 });
   if (S.revMonths.length > 6) S.revMonths.shift();
-  // reset monthly counters
   S.rev = 0;
   S.readings.forEach(r => r.sold = 0);
   S.outreach = { sent: 0, replied: 0, booked: 0 };
   S.priorities.forEach(p => p.done = false);
-  Object.values(S.dailyOps).forEach(items => items.forEach(t => t.done = false));
+  Object.values(S.todayTasks).forEach(items => items.forEach(t => t.done = false));
   S.activity = [{ time: new Date().toISOString().slice(0,10) + ' 00:00', text: `New month: ${newMonth} — fresh start` }];
-  saveAll();
-  closeModal();
-  renderPane();
+  saveAll(); closeModal(); renderPane();
 }
 
 // ═══════════════════════════════════════════
 // KEYBOARD SHORTCUTS
 // ═══════════════════════════════════════════
 document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '8') {
+  if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '9') {
     e.preventDefault();
     const idx = parseInt(e.key) - 1;
     if (TABS[idx]) switchTab(TABS[idx].name);
