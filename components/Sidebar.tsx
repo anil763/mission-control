@@ -1,14 +1,16 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Film, Brain, Users, Zap } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Film, Brain, Users, Zap, Calendar, Building2 } from "lucide-react";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/content", label: "Content Pipeline", icon: Film },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/team", label: "Team", icon: Users },
+  { href: "/office", label: "Office", icon: Building2 },
 ];
 
 export default function Sidebar() {

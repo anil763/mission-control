@@ -44,6 +44,16 @@ export default defineSchema({
     updatedAt: v.number(),
   }),
 
+  cronEvents: defineTable({
+    title: v.string(),
+    description: v.optional(v.string()),
+    scheduledAt: v.number(),
+    recurrence: v.optional(v.string()),
+    type: v.union(v.literal("reminder"), v.literal("task"), v.literal("event")),
+    agentId: v.optional(v.string()),
+    createdAt: v.number(),
+  }),
+
   agents: defineTable({
     agentId: v.string(),
     name: v.string(),
