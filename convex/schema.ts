@@ -86,4 +86,15 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }),
+
+  reports: defineTable({
+    sourcePath: v.string(),
+    title: v.string(),
+    category: v.string(),
+    content: v.string(),
+    runAt: v.number(),
+    tags: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_sourcePath", ["sourcePath"]).index("by_category", ["category"]),
 });

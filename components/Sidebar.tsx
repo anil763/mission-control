@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Film, Brain, Users, Zap, Calendar, Building2, Handshake } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Film, Brain, Users, Zap, Calendar, Building2, Handshake, FileText } from "lucide-react";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -9,6 +9,7 @@ const nav = [
   { href: "/content", label: "Content Pipeline", icon: Film },
   { href: "/ugc", label: "UGC CRM", icon: Handshake },
   { href: "/calendar", label: "Calendar", icon: Calendar },
+  { href: "/reports", label: "Reports", icon: FileText },
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/team", label: "Team", icon: Users },
   { href: "/office", label: "Office", icon: Building2 },
