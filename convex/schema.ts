@@ -64,4 +64,26 @@ export default defineSchema({
     workspace: v.string(),
     updatedAt: v.number(),
   }),
+
+  ugcDeals: defineTable({
+    brand: v.string(),
+    title: v.string(),
+    amount: v.number(),
+    videosCommitted: v.number(),
+    videosDelivered: v.number(),
+    status: v.union(v.literal("lead"), v.literal("pending"), v.literal("agreed"), v.literal("producing"), v.literal("delivered"), v.literal("closed")),
+    paymentStatus: v.union(v.literal("unpaid"), v.literal("partial"), v.literal("paid")),
+    notes: v.optional(v.string()),
+    dueDate: v.optional(v.number()),
+    paidAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }),
+
+  ugcGoals: defineTable({
+    month: v.string(),
+    goalAmount: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }),
 });

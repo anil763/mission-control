@@ -14,6 +14,7 @@ import type * as cronEvents from "../cronEvents.js";
 import type * as http from "../http.js";
 import type * as memories from "../memories.js";
 import type * as tasks from "../tasks.js";
+import type * as ugc from "../ugc.js";
 
 import type {
   ApiFromModules,
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   memories: typeof memories;
   tasks: typeof tasks;
+  ugc: typeof ugc;
 }>;
 
 /**

@@ -30,7 +30,11 @@ export function middleware(req: NextRequest) {
   const encoded = authHeader.split(" ")[1] ?? "";
   let decoded = "";
   try {
-    decoded = Buffer.from(encoded, "base64").toString("utf8");
+    if (typeof atob === "function") {
+      decoded = atob(encoded);
+    } else {
+      decoded = Buffer.from(encoded, "base64").toString("utf8");
+    }
   } catch {
     return unauthorizedResponse();
   }
