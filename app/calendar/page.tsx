@@ -153,11 +153,12 @@ export default function CalendarPage() {
             <select className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none" value={form.agentId} onChange={(e) => setForm({ ...form, agentId: e.target.value })}>
               <option value="">No agent assigned</option>
               <option value="main">Opus</option>
-              <option value="ugc-growth">UGC Growth Agent</option>
-              <option value="spiritual-tech">Spiritual Technologist</option>
-              <option value="temple-ops">Temple Operations</option>
-              <option value="ms-strategist">MS AI Strategist</option>
-              <option value="health-opt">Health Optimization</option>
+              <option value="ugc-growth">Nova</option>
+              <option value="spiritual-tech">Kai</option>
+              <option value="temple-ops">Atlas</option>
+              <option value="ms-strategist">Sienna</option>
+              <option value="managed-services">Managed Services</option>
+              <option value="health-opt">Mira</option>
             </select>
             <div className="flex gap-2">
               <button onClick={handleAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">Save</button>

@@ -5,11 +5,12 @@ import { useEffect } from "react";
 
 const AGENTS = [
   { agentId: "main", name: "Opus", role: "Chief of Staff", emoji: "🎯", desk: "Main Office", color: "from-indigo-900 to-indigo-800" },
-  { agentId: "ugc-growth", name: "UGC Growth", role: "Content Strategist", emoji: "💰", desk: "Studio A", color: "from-pink-900 to-pink-800" },
-  { agentId: "spiritual-tech", name: "Spiritual Tech", role: "Blueprint Architect", emoji: "🔮", desk: "Sanctuary", color: "from-purple-900 to-purple-800" },
-  { agentId: "temple-ops", name: "Temple Ops", role: "Community Coordinator", emoji: "🛕", desk: "Temple Wing", color: "from-amber-900 to-amber-800" },
-  { agentId: "ms-strategist", name: "MS Strategist", role: "Tech Thought Leader", emoji: "🧠", desk: "War Room", color: "from-blue-900 to-blue-800" },
-  { agentId: "health-opt", name: "Health Optimizer", role: "Vitality Coach", emoji: "⚡", desk: "Wellness Center", color: "from-green-900 to-green-800" },
+  { agentId: "ugc-growth", name: "Nova", role: "Content Strategist", emoji: "💰", desk: "Studio A", color: "from-pink-900 to-pink-800" },
+  { agentId: "spiritual-tech", name: "Kai", role: "Blueprint Architect", emoji: "🔮", desk: "Sanctuary", color: "from-purple-900 to-purple-800" },
+  { agentId: "temple-ops", name: "Atlas", role: "Community Coordinator", emoji: "🛕", desk: "Temple Wing", color: "from-amber-900 to-amber-800" },
+  { agentId: "ms-strategist", name: "Sienna", role: "Tech Thought Leader", emoji: "🧠", desk: "War Room", color: "from-blue-900 to-blue-800" },
+  { agentId: "managed-services", name: "Managed Services", role: "Market Intelligence Lead", emoji: "📊", desk: "Strategy Lab", color: "from-cyan-900 to-cyan-800" },
+  { agentId: "health-opt", name: "Mira", role: "Vitality Coach", emoji: "⚡", desk: "Wellness Center", color: "from-green-900 to-green-800" },
 ];
 
 const statusConfig = {
@@ -24,12 +25,12 @@ export default function OfficePage() {
 
   useEffect(() => {
     AGENTS.forEach((a) => {
-      const exists = agents.find((ag) => ag.agentId === a.agentId);
-      if (!exists) {
-        upsertAgent({ agentId: a.agentId, name: a.name, role: a.role, emoji: a.emoji, status: "idle", workspace: `~/.openclaw/workspace-${a.agentId}` });
+      const existing = agents.find((ag) => ag.agentId === a.agentId);
+      if (!existing || existing.name !== a.name || existing.role !== a.role || existing.emoji !== a.emoji) {
+        upsertAgent({ agentId: a.agentId, name: a.name, role: a.role, emoji: a.emoji, status: existing?.status ?? "idle", workspace: `~/.openclaw/workspace-${a.agentId}` });
       }
     });
-  }, [agents.length]);
+  }, [agents]);
 
   const getAgent = (agentId: string) => agents.find((a) => a.agentId === agentId);
   const workingCount = agents.filter((a) => a.status === "working").length;

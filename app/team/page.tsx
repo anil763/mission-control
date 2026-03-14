@@ -5,11 +5,12 @@ import { useEffect } from "react";
 
 const AGENTS = [
   { agentId: "main", name: "Opus", role: "Chief of Staff · Personal Assistant", emoji: "🎯", workspace: "~/.openclaw/workspace" },
-  { agentId: "ugc-growth", name: "UGC Growth Agent", role: "UGC Business Strategist · Content Production", emoji: "💰", workspace: "~/.openclaw/workspace-ugc-growth" },
-  { agentId: "spiritual-tech", name: "Spiritual Technologist", role: "Spiritual Business Strategy · The Blueprint Code™", emoji: "🔮", workspace: "~/.openclaw/workspace-spiritual-tech" },
-  { agentId: "temple-ops", name: "Temple Operations", role: "Guruji Ka Ashram · Communications & Events", emoji: "🛕", workspace: "~/.openclaw/workspace-temple-ops" },
-  { agentId: "ms-strategist", name: "MS AI Strategist", role: "Managed Services · Cloud · Agentic AI · LinkedIn", emoji: "🧠", workspace: "~/.openclaw/workspace-ms-strategist" },
-  { agentId: "health-opt", name: "Health Optimization", role: "Energy · TRT · Blood Sugar · Longevity", emoji: "⚡", workspace: "~/.openclaw/workspace-health-opt" },
+  { agentId: "ugc-growth", name: "Nova", role: "UGC Business Strategist · Content Production", emoji: "💰", workspace: "~/.openclaw/workspace-ugc-growth" },
+  { agentId: "spiritual-tech", name: "Kai", role: "Spiritual Business Strategy · The Blueprint Code™", emoji: "🔮", workspace: "~/.openclaw/workspace-spiritual-tech" },
+  { agentId: "temple-ops", name: "Atlas", role: "Guruji Ka Ashram · Communications & Events", emoji: "🛕", workspace: "~/.openclaw/workspace-temple-ops" },
+  { agentId: "ms-strategist", name: "Sienna", role: "Managed Services · Cloud · Agentic AI · LinkedIn", emoji: "🧠", workspace: "~/.openclaw/workspace-ms-strategist" },
+  { agentId: "managed-services", name: "Managed Services", role: "Presidio + Capgemini Research · Market Trends · Client Needs", emoji: "📊", workspace: "~/.openclaw/workspace-managed-services" },
+  { agentId: "health-opt", name: "Mira", role: "Energy · TRT · Blood Sugar · Longevity", emoji: "⚡", workspace: "~/.openclaw/workspace-health-opt" },
 ];
 
 const statusColors = {
@@ -30,12 +31,12 @@ export default function TeamPage() {
 
   useEffect(() => {
     AGENTS.forEach((a) => {
-      const exists = agents.find((ag) => ag.agentId === a.agentId);
-      if (!exists) {
-        upsertAgent({ ...a, status: "idle" });
+      const existing = agents.find((ag) => ag.agentId === a.agentId);
+      if (!existing || existing.name !== a.name || existing.role !== a.role || existing.emoji !== a.emoji || existing.workspace !== a.workspace) {
+        upsertAgent({ ...a, status: existing?.status ?? "idle" });
       }
     });
-  }, [agents.length]);
+  }, [agents]);
 
   const getAgent = (agentId: string) => agents.find((a) => a.agentId === agentId);
 
